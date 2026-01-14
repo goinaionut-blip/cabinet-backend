@@ -1,0 +1,23 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/stoma}
+    username: ${SPRING_DATASOURCE_USERNAME:stoma}
+    password: ${SPRING_DATASOURCE_PASSWORD:stoma}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:change-me-change-me-change-me-change-me}
+    expirationMinutes: ${APP_JWT_EXP_MIN:240}
+  auth:
+    users:
+      - username: doctor
+        password: change-me
