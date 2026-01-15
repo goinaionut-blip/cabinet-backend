@@ -29,6 +29,11 @@ public class AppointmentService {
   public Appointment update(Long id, Appointment appointment) {
     validateAppointment(appointment);
     appointment.setId(id);
+    if (appointment.getPatientId() == null) {
+      Appointment existing = repository.findById(id)
+          .orElseThrow(() -> new NotFoundException("Programare inexistenta."));
+      appointment.setPatientId(existing.getPatientId());
+    }
     if (repository.existsOverlapExcludingId(
         appointment.getDoctorId(), appointment.getStartTime(), appointment.getEndTime(), id)) {
       throw new OverlapException("Exista o programare suprapusa.");

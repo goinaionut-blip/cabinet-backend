@@ -58,6 +58,9 @@ public class AppointmentController {
   private static Appointment map(AppointmentRequest request) {
     Appointment appointment = new Appointment();
     appointment.setDoctorId(request.doctorId());
+    if (request.patientId() != null && request.patientId() > 0) {
+      appointment.setPatientId(request.patientId());
+    }
     appointment.setPatientName(request.patientName());
     appointment.setStartTime(request.startTime());
     appointment.setEndTime(request.endTime());
@@ -67,6 +70,7 @@ public class AppointmentController {
 
   public record AppointmentRequest(
       @NotNull Long doctorId,
+      Long patientId,
       @NotNull String patientName,
       @NotNull LocalDateTime startTime,
       @NotNull LocalDateTime endTime,

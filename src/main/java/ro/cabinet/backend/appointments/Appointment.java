@@ -24,6 +24,9 @@ public class Appointment {
   @Column(name = "doctor_id", nullable = false)
   private Long doctorId;
 
+  @Column(name = "patient_id")
+  private Long patientId;
+
   @NotNull
   @Column(name = "patient_name", nullable = false)
   private String patientName;
@@ -53,6 +56,14 @@ public class Appointment {
 
   public void setDoctorId(Long doctorId) {
     this.doctorId = doctorId;
+  }
+
+  public Long getPatientId() {
+    return patientId;
+  }
+
+  public void setPatientId(Long patientId) {
+    this.patientId = patientId;
   }
 
   public String getPatientName() {
