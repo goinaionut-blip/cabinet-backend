@@ -22,3 +22,6 @@ app:
     users:
       - username: diana
         password: ArgosFifi
+      - username: asistenta
+        password: DeNeuitat
+
