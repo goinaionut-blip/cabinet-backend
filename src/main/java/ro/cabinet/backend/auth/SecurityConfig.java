@@ -1,6 +1,7 @@
 package ro.cabinet.backend.auth;
 
 import ro.cabinet.backend.config.AuthUsersProperties;
+import ro.cabinet.backend.sign.SignApiKeyFilter;
 
 import java.util.List;
 
@@ -61,14 +62,18 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter,
+                                         SignApiKeyFilter apiKeyAuthFilter,
                                          AuthenticationProvider authProvider) throws Exception {
     http.csrf(csrf -> csrf.disable())
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/login").permitAll()
+            .requestMatchers("/sign/**", "/upload/**", "/done/**").permitAll()
+            .requestMatchers("/api/sign/**").permitAll()
             .anyRequest().authenticated())
         .authenticationProvider(authProvider)
+        .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }
