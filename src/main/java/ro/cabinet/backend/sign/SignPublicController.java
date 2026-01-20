@@ -60,7 +60,7 @@ public class SignPublicController {
             }
             .btn {
               display: block;
-              width: 100%;
+              width: 100%%;
               text-align: center;
               padding: 16px 20px;
               font-size: 18px;

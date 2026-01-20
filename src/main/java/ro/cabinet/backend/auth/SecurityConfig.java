@@ -69,7 +69,9 @@ public class SecurityConfig {
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/login").permitAll()
-            .requestMatchers("/sign/**", "/upload/**", "/done/**").permitAll()
+            .requestMatchers("/sign", "/sign/**").permitAll()
+            .requestMatchers("/upload", "/upload/**").permitAll()
+            .requestMatchers("/done", "/done/**").permitAll()
             .requestMatchers("/api/sign/**").permitAll()
             .anyRequest().authenticated())
         .authenticationProvider(authProvider)
