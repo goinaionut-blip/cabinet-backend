@@ -1,5 +1,6 @@
 package ro.cabinet.backend.sign;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.core.io.Resource;
@@ -86,8 +87,8 @@ public class SignPublicController {
           <div class=\"card\">
             <h2>Semnare document</h2>
             <p><strong>Pasul 1:</strong> descarca PDF-ul si semneaza-l in Adobe Acrobat Reader.</p>
-            <a class=\"btn\" href=\"/sign/pdf?token=%s\">Descarca PDF <span class=\"badge\">PDF</span></a>
-            <p style=\"font-size: 13px; color: #444; margin-top: -8px;\">Daca nu se deschide automat, alege „Open with Adobe Acrobat Reader”.</p>
+            <a class=\"btn\" href=\"/sign/pdf?token=%s\" target=\"_blank\" rel=\"noopener\">Descarca PDF <span class=\"badge\">PDF</span></a>
+            <p style=\"font-size: 13px; color: #444; margin-top: -8px;\">Dupa descarcare, deschide fisierul din Downloads/Files si alege Adobe Acrobat. Apoi Save a copy.</p>
             <hr class=\"divider\" />
             <p><strong>Pasul 2:</strong> incarca fisierul semnat aici:</p>
             <a class=\"btn secondary\" href=\"/upload?token=%s\">Incarca PDF semnat</a>
@@ -97,6 +98,7 @@ public class SignPublicController {
         """.formatted(token, token);
     return ResponseEntity.ok()
         .contentType(MediaType.TEXT_HTML)
+        .header(HttpHeaders.CACHE_CONTROL, "no-store")
         .body(html.getBytes(StandardCharsets.UTF_8));
   }
 
@@ -105,12 +107,12 @@ public class SignPublicController {
     SignSession session = signService.getSessionByToken(token);
     Resource resource = signService.loadIncoming(session);
     String filename = session.getOriginalFilename();
-    if (filename == null || filename.isBlank()) {
-      filename = "document.pdf";
-    }
     return ResponseEntity.ok()
         .contentType(MediaType.APPLICATION_PDF)
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
+        .header(HttpHeaders.PRAGMA, "no-cache")
+        .header("X-Content-Type-Options", "nosniff")
+        .header(HttpHeaders.CONTENT_DISPOSITION, contentDispositionAttachment(filename))
         .body(resource);
   }
 
@@ -137,6 +139,7 @@ public class SignPublicController {
         """.formatted(token);
     return ResponseEntity.ok()
         .contentType(MediaType.TEXT_HTML)
+        .header(HttpHeaders.CACHE_CONTROL, "no-store")
         .body(html.getBytes(StandardCharsets.UTF_8));
   }
 
@@ -169,6 +172,24 @@ public class SignPublicController {
         """;
     return ResponseEntity.ok()
         .contentType(MediaType.TEXT_HTML)
+        .header(HttpHeaders.CACHE_CONTROL, "no-store")
         .body(html.getBytes(StandardCharsets.UTF_8));
+  }
+
+  static String contentDispositionAttachment(String filename) {
+    String safe = sanitizeFilename(filename);
+    if (!safe.toLowerCase().endsWith(".pdf")) {
+      safe = safe + ".pdf";
+    }
+    String encoded = URLEncoder.encode(safe, StandardCharsets.UTF_8).replace("+", "%20");
+    return "attachment; filename=\"" + safe + "\"; filename*=UTF-8''" + encoded;
+  }
+
+  private static String sanitizeFilename(String filename) {
+    if (filename == null || filename.isBlank()) {
+      return "document.pdf";
+    }
+    String cleaned = filename.replace("\"", "").trim();
+    return cleaned.isBlank() ? "document.pdf" : cleaned;
   }
 }

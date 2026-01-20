@@ -71,12 +71,13 @@ public class SignApiController {
     }
     Resource resource = signService.loadSigned(session);
     String filename = session.getOriginalFilename();
-    if (filename == null || filename.isBlank()) {
-      filename = "document-signed.pdf";
-    }
+    filename = buildSignedFilename(filename);
     return ResponseEntity.ok()
         .contentType(MediaType.APPLICATION_PDF)
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
+        .header(HttpHeaders.PRAGMA, "no-cache")
+        .header("X-Content-Type-Options", "nosniff")
+        .header(HttpHeaders.CONTENT_DISPOSITION, SignPublicController.contentDispositionAttachment(filename))
         .body(resource);
   }
 
@@ -116,5 +117,20 @@ public class SignApiController {
   public record SignSessionStatusResponse(String token, SignSessionStatus status,
                                           OffsetDateTime expiresAt, boolean signedAvailable,
                                           String originalFilename) {
+  }
+
+  private String buildSignedFilename(String originalFilename) {
+    if (originalFilename == null || originalFilename.isBlank()) {
+      return "document_signed.pdf";
+    }
+    String cleaned = originalFilename.replace("\"", "").trim();
+    if (cleaned.isBlank()) {
+      return "document_signed.pdf";
+    }
+    String withoutExt = cleaned.replaceAll("(?i)\\.pdf$", "");
+    if (withoutExt.isBlank()) {
+      return "document_signed.pdf";
+    }
+    return withoutExt + "_signed.pdf";
   }
 }
