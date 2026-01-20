@@ -3,6 +3,7 @@ package ro.cabinet.backend.sign;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +34,7 @@ public class SignWebController {
     SignSession session = signService.getSessionByToken(token);
     SignTemplateId templateId = session.getTemplateId();
     SignTemplateRegistry.TemplateDefinition template = templateRegistry.getTemplate(templateId);
-    Map<String, Object> prefill = parseFormData(session.getFormData());
+    Map<String, Object> prefill = filterPrefill(templateId, parseFormData(session.getFormData()));
     String html = buildPageHtml(token, template, prefill);
     return ResponseEntity.ok()
         .contentType(MediaType.TEXT_HTML)
@@ -88,26 +89,45 @@ public class SignWebController {
   private String buildPageHtml(String token, SignTemplateRegistry.TemplateDefinition template,
                                Map<String, Object> prefill) {
     StringBuilder fieldsHtml = new StringBuilder();
-    for (SignTemplateRegistry.FormField field : template.formFields()) {
-      String safeName = escapeHtml(field.name());
-      String safeLabel = escapeHtml(field.label());
-      if (field.type() == SignTemplateRegistry.FieldType.CHECKBOX) {
-        boolean checked = toBoolean(prefill.get(field.name()));
-        String checkedAttr = checked ? " checked" : "";
-        fieldsHtml.append("""
-            <label class="field checkbox">
-              <input type="checkbox" data-field="%s"%s />
-              <span>%s</span>
-            </label>
-            """.formatted(safeName, checkedAttr, safeLabel));
-      } else {
-        String value = escapeHtml(toText(prefill.get(field.name())));
-        fieldsHtml.append("""
-            <label class="field">
-              <span>%s</span>
-              <input type="text" data-field="%s" value="%s" />
-            </label>
-            """.formatted(safeLabel, safeName, value));
+    if (template.id() == SignTemplateId.HEALTH_QUESTIONNAIRE) {
+      Set<String> prefillFields = Set.of("Name", "CNP", "Address", "Data");
+      fieldsHtml.append("""
+          <section class="section">
+            <div class="section-header">
+              <h3>Date pacient</h3>
+              <p>Aceste câmpuri sunt precompletate.</p>
+            </div>
+            <div class="grid two">
+          """);
+      for (SignTemplateRegistry.FormField field : template.formFields()) {
+        if (!prefillFields.contains(field.name())) {
+          continue;
+        }
+        fieldsHtml.append(renderField(field, prefill));
+      }
+      fieldsHtml.append("""
+            </div>
+          </section>
+          <section class="section">
+            <div class="section-header">
+              <h3>Chestionar medical</h3>
+              <p>Completați toate câmpurile aplicabile.</p>
+            </div>
+            <div class="grid two">
+          """);
+      for (SignTemplateRegistry.FormField field : template.formFields()) {
+        if (prefillFields.contains(field.name())) {
+          continue;
+        }
+        fieldsHtml.append(renderField(field, prefill));
+      }
+      fieldsHtml.append("""
+            </div>
+          </section>
+          """);
+    } else {
+      for (SignTemplateRegistry.FormField field : template.formFields()) {
+        fieldsHtml.append(renderField(field, prefill));
       }
     }
 
@@ -159,37 +179,73 @@ public class SignWebController {
           <style>
             :root { color-scheme: light; }
             body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+              font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
               margin: 0;
-              padding: 20px;
-              background: #f6f7fb;
-              color: #111;
+              padding: 24px;
+              background: radial-gradient(circle at top, #fdf3e6, #f7f1e1 40%%, #edf2f8 100%%);
+              color: #14202b;
             }
             .card {
-              max-width: 720px;
+              max-width: 980px;
               margin: 0 auto;
-              background: #fff;
-              border-radius: 16px;
-              padding: 20px;
-              box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+              background: #fffdf8;
+              border-radius: 20px;
+              padding: 28px;
+              box-shadow: 0 18px 40px rgba(27, 39, 51, 0.12);
+              border: 1px solid rgba(20, 32, 43, 0.08);
             }
-            h2 { margin-top: 0; }
+            h2 {
+              margin: 0 0 18px;
+              font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+              letter-spacing: 0.3px;
+            }
+            .section {
+              margin-bottom: 24px;
+              padding: 16px;
+              border-radius: 16px;
+              background: #ffffff;
+              border: 1px solid rgba(20, 32, 43, 0.08);
+            }
+            .section-header {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              margin-bottom: 12px;
+            }
+            .section-header h3 {
+              margin: 0;
+              font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+            }
+            .section-header p {
+              margin: 0;
+              font-size: 13px;
+              color: #4b5563;
+            }
             .grid {
               display: grid;
               grid-template-columns: 1fr;
               gap: 12px;
             }
+            .grid.two {
+              grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            }
             .field { display: grid; gap: 6px; font-size: 14px; }
             .field input[type="text"] {
               padding: 10px 12px;
-              border-radius: 8px;
-              border: 1px solid #d0d7de;
+              border-radius: 10px;
+              border: 1px solid #ccd6e3;
+              background: #fff;
+              font-family: inherit;
             }
             .checkbox {
               display: flex;
               align-items: center;
               gap: 10px;
               font-size: 14px;
+              padding: 6px 8px;
+              border-radius: 10px;
+              background: #f7f7fb;
+              border: 1px solid rgba(20, 32, 43, 0.08);
             }
             .question {
               display: grid;
@@ -209,6 +265,10 @@ public class SignWebController {
             .yesno { display: inline-flex; align-items: center; gap: 6px; }
             .signature {
               margin-top: 16px;
+              padding: 16px;
+              border-radius: 16px;
+              background: #fff;
+              border: 1px solid rgba(20, 32, 43, 0.08);
             }
             canvas {
               width: 100%%;
@@ -219,6 +279,7 @@ public class SignWebController {
             }
             .actions {
               display: flex;
+              flex-wrap: wrap;
               gap: 12px;
               margin-top: 16px;
             }
@@ -231,6 +292,10 @@ public class SignWebController {
             .primary { background: #1b5e20; color: #fff; }
             .secondary { background: #e3f2fd; color: #0d47a1; }
             .status { margin-top: 12px; font-size: 14px; color: #555; }
+            @media (max-width: 720px) {
+              body { padding: 16px; }
+              .card { padding: 20px; }
+            }
           </style>
         </head>
         <body>
@@ -348,6 +413,28 @@ public class SignWebController {
         """.formatted(fieldsHtml, questionsHtml, token);
   }
 
+  private String renderField(SignTemplateRegistry.FormField field, Map<String, Object> prefill) {
+    String safeName = escapeHtml(field.name());
+    String safeLabel = escapeHtml(field.label());
+    if (field.type() == SignTemplateRegistry.FieldType.CHECKBOX) {
+      boolean checked = toBoolean(prefill.get(field.name()));
+      String checkedAttr = checked ? " checked" : "";
+      return """
+          <label class="field checkbox">
+            <input type="checkbox" data-field="%s"%s />
+            <span>%s</span>
+          </label>
+          """.formatted(safeName, checkedAttr, safeLabel);
+    }
+    String value = escapeHtml(toText(prefill.get(field.name())));
+    return """
+        <label class="field">
+          <span>%s</span>
+          <input type="text" data-field="%s" value="%s" />
+        </label>
+        """.formatted(safeLabel, safeName, value);
+  }
+
   private String escapeHtml(String value) {
     if (value == null) {
       return "";
@@ -383,6 +470,20 @@ public class SignWebController {
     } catch (Exception ex) {
       return new LinkedHashMap<>();
     }
+  }
+
+  private Map<String, Object> filterPrefill(SignTemplateId templateId, Map<String, Object> prefill) {
+    if (prefill == null || prefill.isEmpty() || templateId != SignTemplateId.HEALTH_QUESTIONNAIRE) {
+      return prefill == null ? new LinkedHashMap<>() : prefill;
+    }
+    Set<String> allowed = Set.of("Name", "CNP", "Address", "Data");
+    Map<String, Object> filtered = new LinkedHashMap<>();
+    for (Map.Entry<String, Object> entry : prefill.entrySet()) {
+      if (allowed.contains(entry.getKey())) {
+        filtered.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return filtered;
   }
 
   public record SignWebSubmitRequest(Map<String, Object> formData, String signaturePngBase64) {
