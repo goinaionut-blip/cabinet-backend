@@ -35,6 +35,9 @@ public class SignSession {
   @Column(name = "template_id", length = 32)
   private SignTemplateId templateId;
 
+  @Column(name = "form_data")
+  private String formData;
+
   @Column(name = "original_filename")
   private String originalFilename;
 
@@ -131,6 +134,14 @@ public class SignSession {
 
   public void setTemplateId(SignTemplateId templateId) {
     this.templateId = templateId;
+  }
+
+  public String getFormData() {
+    return formData;
+  }
+
+  public void setFormData(String formData) {
+    this.formData = formData;
   }
 
   public String getOriginalFilename() {

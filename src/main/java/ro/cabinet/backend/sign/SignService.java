@@ -21,6 +21,7 @@ import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.pdmodel.interactive.form.PDCheckBox;
 import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -34,13 +35,16 @@ public class SignService {
   private final SignProperties properties;
   private final StorageService storageService;
   private final SignTemplateRegistry templateRegistry;
+  private final ObjectMapper objectMapper;
 
   public SignService(SignSessionRepository repository, SignProperties properties,
-                     StorageService storageService, SignTemplateRegistry templateRegistry) {
+                     StorageService storageService, SignTemplateRegistry templateRegistry,
+                     ObjectMapper objectMapper) {
     this.repository = repository;
     this.properties = properties;
     this.storageService = storageService;
     this.templateRegistry = templateRegistry;
+    this.objectMapper = objectMapper;
   }
 
   public SignSession createSession(String documentId, String patientId, Integer ttlMinutes) {
@@ -48,6 +52,11 @@ public class SignService {
   }
 
   public SignSession createSession(String documentId, String patientId, Integer ttlMinutes, SignTemplateId templateId) {
+    return createSession(documentId, patientId, ttlMinutes, templateId, null);
+  }
+
+  public SignSession createSession(String documentId, String patientId, Integer ttlMinutes,
+                                   SignTemplateId templateId, Map<String, Object> formData) {
     if (documentId == null || documentId.isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "DocumentId lipsa");
     }
@@ -67,6 +76,7 @@ public class SignService {
     session.setDocumentId(documentId);
     session.setPatientId(patientId);
     session.setTemplateId(templateId);
+    session.setFormData(serializeFormData(formData));
     session.setCreatedAt(now);
     session.setExpiresAt(expiresAt);
     return repository.save(session);
@@ -320,6 +330,17 @@ public class SignService {
     }
     String fallback = (documentId == null || documentId.isBlank()) ? "document_signed" : documentId + "_signed";
     return fallback + ".pdf";
+  }
+
+  private String serializeFormData(Map<String, Object> formData) {
+    if (formData == null || formData.isEmpty()) {
+      return null;
+    }
+    try {
+      return objectMapper.writeValueAsString(formData);
+    } catch (Exception ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Form data invalid");
+    }
   }
 
   @Scheduled(fixedDelay = 300000)

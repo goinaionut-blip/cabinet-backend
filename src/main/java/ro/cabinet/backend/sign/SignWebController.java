@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class SignWebController {
   private final SignService signService;
   private final SignTemplateRegistry templateRegistry;
+  private final ObjectMapper objectMapper;
 
-  public SignWebController(SignService signService, SignTemplateRegistry templateRegistry) {
+  public SignWebController(SignService signService, SignTemplateRegistry templateRegistry,
+                           ObjectMapper objectMapper) {
     this.signService = signService;
     this.templateRegistry = templateRegistry;
+    this.objectMapper = objectMapper;
   }
 
   @GetMapping(value = "/sign-web", produces = MediaType.TEXT_HTML_VALUE)
@@ -28,7 +33,8 @@ public class SignWebController {
     SignSession session = signService.getSessionByToken(token);
     SignTemplateId templateId = session.getTemplateId();
     SignTemplateRegistry.TemplateDefinition template = templateRegistry.getTemplate(templateId);
-    String html = buildPageHtml(token, template);
+    Map<String, Object> prefill = parseFormData(session.getFormData());
+    String html = buildPageHtml(token, template, prefill);
     return ResponseEntity.ok()
         .contentType(MediaType.TEXT_HTML)
         .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
@@ -75,24 +81,72 @@ public class SignWebController {
 
   private String buildPageHtml(String token, SignTemplateRegistry.TemplateDefinition template) {
     StringBuilder fieldsHtml = new StringBuilder();
+    Map<String, Object> empty = new LinkedHashMap<>();
+    return buildPageHtml(token, template, empty);
+  }
+
+  private String buildPageHtml(String token, SignTemplateRegistry.TemplateDefinition template,
+                               Map<String, Object> prefill) {
+    StringBuilder fieldsHtml = new StringBuilder();
     for (SignTemplateRegistry.FormField field : template.formFields()) {
       String safeName = escapeHtml(field.name());
       String safeLabel = escapeHtml(field.label());
       if (field.type() == SignTemplateRegistry.FieldType.CHECKBOX) {
+        boolean checked = toBoolean(prefill.get(field.name()));
+        String checkedAttr = checked ? " checked" : "";
         fieldsHtml.append("""
             <label class="field checkbox">
-              <input type="checkbox" data-field="%s" />
+              <input type="checkbox" data-field="%s"%s />
               <span>%s</span>
             </label>
-            """.formatted(safeName, safeLabel));
+            """.formatted(safeName, checkedAttr, safeLabel));
       } else {
+        String value = escapeHtml(toText(prefill.get(field.name())));
         fieldsHtml.append("""
             <label class="field">
               <span>%s</span>
-              <input type="text" data-field="%s" />
+              <input type="text" data-field="%s" value="%s" />
             </label>
-            """.formatted(safeLabel, safeName));
+            """.formatted(safeLabel, safeName, value));
       }
+    }
+
+    StringBuilder questionsHtml = new StringBuilder();
+    String header = template.questionsHeader();
+    if (header != null && !header.isBlank()) {
+      questionsHtml.append("""
+          <div class="questions-header">%s</div>
+          """.formatted(escapeHtml(header)));
+    }
+    int index = 0;
+    for (SignTemplateRegistry.YesNoField field : template.yesNoFields()) {
+      String group = "q" + index;
+      String yesName = escapeHtml(field.yesField());
+      String noName = escapeHtml(field.noField());
+      Object yesValue = prefill.get(field.yesField());
+      Object noValue = prefill.get(field.noField());
+      boolean yesChecked = toBoolean(yesValue);
+      boolean noChecked = toBoolean(noValue);
+      if (yesValue == null && noValue == null) {
+        yesChecked = true;
+        noChecked = false;
+      }
+      String yesAttr = yesChecked ? " checked" : "";
+      String noAttr = noChecked ? " checked" : "";
+      questionsHtml.append("""
+          <div class="question">
+            <span class="question-label">%s</span>
+            <label class="yesno">
+              <input type="checkbox" data-field="%s" data-group="%s"%s />
+              <span>Da</span>
+            </label>
+            <label class="yesno">
+              <input type="checkbox" data-field="%s" data-group="%s"%s />
+              <span>Nu</span>
+            </label>
+          </div>
+          """.formatted(escapeHtml(field.label()), yesName, group, yesAttr, noName, group, noAttr));
+      index++;
     }
 
     return """
@@ -137,6 +191,22 @@ public class SignWebController {
               gap: 10px;
               font-size: 14px;
             }
+            .question {
+              display: grid;
+              grid-template-columns: 1fr auto auto;
+              gap: 12px;
+              align-items: center;
+              padding: 8px 0;
+              border-bottom: 1px solid #eef0f4;
+            }
+            .question-label { font-size: 14px; }
+            .questions-header {
+              margin-top: 12px;
+              font-size: 14px;
+              font-weight: 600;
+              color: #1f2937;
+            }
+            .yesno { display: inline-flex; align-items: center; gap: 6px; }
             .signature {
               margin-top: 16px;
             }
@@ -169,6 +239,7 @@ public class SignWebController {
             <div class="grid">
               %s
             </div>
+            %s
             <div class="signature">
               <label class="field">
                 <span>Semnatura</span>
@@ -229,6 +300,16 @@ public class SignWebController {
               ctx.clearRect(0, 0, canvas.width, canvas.height);
             });
 
+            document.querySelectorAll('[data-group]').forEach((el) => {
+              el.addEventListener('change', () => {
+                if (!el.checked) return;
+                const group = el.getAttribute('data-group');
+                document.querySelectorAll('[data-group=\"' + group + '\"]').forEach((other) => {
+                  if (other !== el) other.checked = false;
+                });
+              });
+            });
+
             document.getElementById('submitBtn').addEventListener('click', async () => {
               const status = document.getElementById('status');
               status.textContent = 'Se trimite...';
@@ -264,7 +345,7 @@ public class SignWebController {
           </script>
         </body>
         </html>
-        """.formatted(fieldsHtml, token);
+        """.formatted(fieldsHtml, questionsHtml, token);
   }
 
   private String escapeHtml(String value) {
@@ -276,6 +357,32 @@ public class SignWebController {
         .replace(">", "&gt;")
         .replace("\"", "&quot;")
         .replace("'", "&#39;");
+  }
+
+  private boolean toBoolean(Object value) {
+    if (value == null) {
+      return false;
+    }
+    if (value instanceof Boolean bool) {
+      return bool;
+    }
+    String text = String.valueOf(value).trim();
+    return "true".equalsIgnoreCase(text) || "1".equals(text) || "yes".equalsIgnoreCase(text);
+  }
+
+  private String toText(Object value) {
+    return value == null ? "" : String.valueOf(value);
+  }
+
+  private Map<String, Object> parseFormData(String json) {
+    if (json == null || json.isBlank()) {
+      return new LinkedHashMap<>();
+    }
+    try {
+      return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+    } catch (Exception ex) {
+      return new LinkedHashMap<>();
+    }
   }
 
   public record SignWebSubmitRequest(Map<String, Object> formData, String signaturePngBase64) {

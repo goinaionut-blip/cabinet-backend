@@ -19,9 +19,43 @@ public class SignTemplateRegistry {
           "sign-templates/informed_consent.pdf",
           new SignaturePlacement(0, 360, 120, 180, 70),
           List.of(
-              new FormField("patient_name", "Nume pacient", FieldType.TEXT),
-              new FormField("patient_cnp", "CNP", FieldType.TEXT),
-              new FormField("consent_checked", "Sunt de acord", FieldType.CHECKBOX)
+              new FormField("Name", "Nume", FieldType.TEXT),
+              new FormField("Address", "Adresa", FieldType.TEXT)
+          ),
+          "4. Au fost furnizate pacientului următoarele informații în legătura cu actul medical:",
+          List.of(
+              new YesNoField("Check Box8", "Check Box9",
+                  "4.1. Date despre starea de sănătate"),
+              new YesNoField("Check Box11", "Check Box12",
+                  "4.2. Diagnostic"),
+              new YesNoField("Check Box13", "Check Box14",
+                  "4.3. Prognostic"),
+              new YesNoField("Check Box15", "Check Box16",
+                  "4.4. Natura și scopul actului medical propus"),
+              new YesNoField("Check Box17", "Check Box18",
+                  "4.5. Intervențiile și strategia terapeutică propuse"),
+              new YesNoField("Check Box19", "Check Box20",
+                  "4.6. Beneficiile și consecințele actului medical, insistându-se asupra următoarelor:"),
+              new YesNoField("Check Box21", "Check Box22",
+                  "4.7. Riscurile potențiale ale actului medical, insistându-se asupra următoarelor:"),
+              new YesNoField("Check Box23", "Check Box24",
+                  "4.8. Alternative viabile de tratament și riscurile acestora, insistându-se asupra următoarelor:"),
+              new YesNoField("Check Box25", "Check Box26",
+                  "4.9. Riscurile neefectuării tratamentului"),
+              new YesNoField("Check Box27", "Check Box28",
+                  "4.10. Riscurile nerespectării recomandărilor medicale"),
+              new YesNoField("Check Box29", "Check Box30",
+                  "5.1. Pacientul este de acord cu recoltarea, păstrarea și folosirea produselor biologice"),
+              new YesNoField("Check Box31", "Check Box32",
+                  "6.1. Informații despre serviciile medicale disponibile"),
+              new YesNoField("Check Box33", "Check Box34",
+                  "6.2. Informații despre identitatea și statutul profesional al personalului care îl va trata*"),
+              new YesNoField("Check Box35", "Check Box36",
+                  "6.3. Informații despre regulile/practicile din unitatea medicală, pe care trebuie să le respecte"),
+              new YesNoField("Check Box37", "Check Box38",
+                  "6.4. Pacientul a fost încunoștințat că are dreptul la o a doua opinie medicală"),
+              new YesNoField("Check Box39", "Check Box40",
+                  "7. Pacientul dorește să fie informat în continuare despre starea sa de sănătate")
           )
       ),
       SignTemplateId.HEALTH_QUESTIONNAIRE,
@@ -33,7 +67,9 @@ public class SignTemplateRegistry {
               new FormField("patient_name", "Nume pacient", FieldType.TEXT),
               new FormField("phone_number", "Telefon", FieldType.TEXT),
               new FormField("health_ok", "Fara alergii cunoscute", FieldType.CHECKBOX)
-          )
+          ),
+          null,
+          List.of()
       ),
       SignTemplateId.GDPR,
       new TemplateDefinition(
@@ -41,9 +77,11 @@ public class SignTemplateRegistry {
           "sign-templates/gdpr.pdf",
           new SignaturePlacement(0, 360, 100, 180, 70),
           List.of(
-              new FormField("patient_name", "Nume pacient", FieldType.TEXT),
-              new FormField("gdpr_accept", "Accept GDPR", FieldType.CHECKBOX)
-          )
+              new FormField("Name", "Nume", FieldType.TEXT),
+              new FormField("Data", "Data", FieldType.TEXT)
+          ),
+          null,
+          List.of()
       )
   );
 
@@ -70,13 +108,18 @@ public class SignTemplateRegistry {
 
   public record TemplateDefinition(SignTemplateId id, String resourcePath,
                                    SignaturePlacement signaturePlacement,
-                                   List<FormField> formFields) {
+                                   List<FormField> formFields,
+                                   String questionsHeader,
+                                   List<YesNoField> yesNoFields) {
   }
 
   public record SignaturePlacement(int pageIndex, float x, float y, float width, float height) {
   }
 
   public record FormField(String name, String label, FieldType type) {
+  }
+
+  public record YesNoField(String yesField, String noField, String label) {
   }
 
   public enum FieldType {

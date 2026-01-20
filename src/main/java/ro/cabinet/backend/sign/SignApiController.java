@@ -43,7 +43,8 @@ public class SignApiController {
         requestBody.documentId(),
         requestBody.patientId(),
         requestBody.ttlMinutes(),
-        templateId
+        templateId,
+        requestBody.formData()
     );
     String signUrl = signService.buildPublicUrl(request, "/sign?token=" + session.getToken());
     String signWebUrl = signService.buildPublicUrl(request, "/sign-web?token=" + session.getToken());
