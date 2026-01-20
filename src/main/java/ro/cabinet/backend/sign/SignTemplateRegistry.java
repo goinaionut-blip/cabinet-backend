@@ -17,7 +17,7 @@ public class SignTemplateRegistry {
       new TemplateDefinition(
           SignTemplateId.INFORMED_CONSENT,
           "sign-templates/informed_consent.pdf",
-          new SignaturePlacement(1, 310, 240, 200, 80),
+          new SignaturePlacement(1, 250, 280, 200, 80),
           List.of(
               new FormField("Name", "Nume", FieldType.TEXT),
               new FormField("Address", "Adresa", FieldType.TEXT)
