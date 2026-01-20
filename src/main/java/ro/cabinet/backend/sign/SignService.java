@@ -159,7 +159,11 @@ public class SignService {
     }
     byte[] signatureBytes = decodePng(signaturePngBase64);
     SignTemplateRegistry.TemplateDefinition template = templateRegistry.getTemplate(session.getTemplateId());
-    byte[] pdfBytes = generateSignedPdf(template, formData, signatureBytes);
+    Map<String, Object> merged = new java.util.LinkedHashMap<>(parseFormData(session.getFormData()));
+    if (formData != null) {
+      merged.putAll(formData);
+    }
+    byte[] pdfBytes = generateSignedPdf(template, merged, signatureBytes);
     String signedFilename = buildSignedFilename(session.getOriginalFilename(), session.getDocumentId());
     try (InputStream inputStream = new ByteArrayInputStream(pdfBytes)) {
       StorageService.StorageResult result = storageService.saveSigned(
@@ -266,9 +270,14 @@ public class SignService {
               checkbox.unCheck();
             }
           } else if (value != null) {
-            field.setValue(String.valueOf(value));
+            String text = String.valueOf(value);
+            if (text.isBlank()) {
+              continue;
+            }
+            field.setValue(text);
           }
         }
+        form.refreshAppearances();
       }
 
       SignTemplateRegistry.SignaturePlacement placement = template.signaturePlacement();
@@ -340,6 +349,17 @@ public class SignService {
       return objectMapper.writeValueAsString(formData);
     } catch (Exception ex) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Form data invalid");
+    }
+  }
+
+  private Map<String, Object> parseFormData(String json) {
+    if (json == null || json.isBlank()) {
+      return java.util.Collections.emptyMap();
+    }
+    try {
+      return objectMapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+    } catch (Exception ex) {
+      return java.util.Collections.emptyMap();
     }
   }
 

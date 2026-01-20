@@ -17,7 +17,7 @@ public class SignTemplateRegistry {
       new TemplateDefinition(
           SignTemplateId.INFORMED_CONSENT,
           "sign-templates/informed_consent.pdf",
-          new SignaturePlacement(0, 360, 120, 180, 70),
+          new SignaturePlacement(1, 330, 260, 200, 80),
           List.of(
               new FormField("Name", "Nume", FieldType.TEXT),
               new FormField("Address", "Adresa", FieldType.TEXT)
@@ -75,7 +75,7 @@ public class SignTemplateRegistry {
       new TemplateDefinition(
           SignTemplateId.GDPR,
           "sign-templates/gdpr.pdf",
-          new SignaturePlacement(0, 360, 100, 180, 70),
+          new SignaturePlacement(6, 380, 180, 200, 80),
           List.of(
               new FormField("Name", "Nume", FieldType.TEXT),
               new FormField("Data", "Data", FieldType.TEXT)
