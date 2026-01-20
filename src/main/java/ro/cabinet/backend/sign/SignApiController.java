@@ -38,8 +38,8 @@ public class SignApiController {
         requestBody.patientId(),
         requestBody.ttlMinutes()
     );
-    String signUrl = signService.buildPublicUrl(request, "/sign?t=" + session.getToken());
-    String uploadUrl = signService.buildPublicUrl(request, "/upload?t=" + session.getToken());
+    String signUrl = signService.buildPublicUrl(request, "/sign?token=" + session.getToken());
+    String uploadUrl = signService.buildPublicUrl(request, "/upload?token=" + session.getToken());
     return new CreateSignSessionResponse(
         session.getToken(),
         session.getStatus(),
