@@ -2,12 +2,20 @@ package ro.cabinet.backend.sign;
 
 import java.nio.charset.StandardCharsets;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -109,41 +117,7 @@ public class SignWebController {
     StringBuilder fieldsHtml = new StringBuilder();
     boolean usePdfBackground = template.id() == SignTemplateId.HEALTH_QUESTIONNAIRE;
     if (template.id() == SignTemplateId.HEALTH_QUESTIONNAIRE) {
-      Set<String> prefillFields = Set.of("Name", "CNP", "Address", "Data");
-      fieldsHtml.append("""
-          <section class="section">
-            <div class="section-header">
-              <h3>Date pacient</h3>
-              <p>Aceste câmpuri sunt precompletate.</p>
-            </div>
-            <div class="grid two">
-          """);
-      for (SignTemplateRegistry.FormField field : template.formFields()) {
-        if (!prefillFields.contains(field.name())) {
-          continue;
-        }
-        fieldsHtml.append(renderField(field, prefill));
-      }
-      fieldsHtml.append("""
-            </div>
-          </section>
-          <section class="section">
-            <div class="section-header">
-              <h3>Chestionar medical</h3>
-              <p>Completați toate câmpurile aplicabile.</p>
-            </div>
-            <div class="grid two">
-          """);
-      for (SignTemplateRegistry.FormField field : template.formFields()) {
-        if (prefillFields.contains(field.name())) {
-          continue;
-        }
-        fieldsHtml.append(renderField(field, prefill));
-      }
-      fieldsHtml.append("""
-            </div>
-          </section>
-          """);
+      // Inputs will be positioned over the rendered PDF using widget coordinates.
     } else {
       for (SignTemplateRegistry.FormField field : template.formFields()) {
         fieldsHtml.append(renderField(field, prefill));
@@ -188,17 +162,15 @@ public class SignWebController {
       index++;
     }
 
+    List<FieldPlacement> placements = usePdfBackground
+        ? loadFieldPlacements(template, prefill)
+        : List.of();
+
     String pdfStageHtml = usePdfBackground ? """
         <div class="pdf-stage">
           <div id="pdfLayer" class="pdf-layer"></div>
-          <div class="form-overlay">
-            <div class="grid">
-              %s
-            </div>
-            %s
-          </div>
         </div>
-        """.formatted(fieldsHtml, questionsHtml) : """
+        """.formatted() : """
         <div class="grid">
           %s
         </div>
@@ -345,17 +317,31 @@ public class SignWebController {
               height: auto;
               pointer-events: none;
             }
-            .form-overlay {
+            .pdf-page {
+              position: relative;
+            }
+            .page-overlay {
               position: absolute;
               inset: 0;
               z-index: 2;
-              padding: 16px;
               pointer-events: none;
             }
-            .form-overlay input,
-            .form-overlay label,
-            .form-overlay button {
+            .pdf-input {
+              position: absolute;
+              box-sizing: border-box;
+              border: 1px solid rgba(27, 94, 32, 0.35);
+              background: rgba(255, 255, 255, 0.15);
+              border-radius: 4px;
+              font-family: inherit;
+              padding: 2px 4px;
+              font-size: 12px;
               pointer-events: auto;
+            }
+            .pdf-input[type="checkbox"] {
+              padding: 0;
+              width: 14px;
+              height: 14px;
+              border-radius: 3px;
             }
             @media (max-width: 720px) {
               body { padding: 16px; }
@@ -473,14 +459,20 @@ public class SignWebController {
           %s
         </body>
         </html>
-        """.formatted(pdfStageHtml, token, buildPdfScript(token, usePdfBackground));
+        """.formatted(pdfStageHtml, token, buildPdfScript(token, usePdfBackground, placements));
   }
 
-  private String buildPdfScript(String token, boolean enabled) {
+  private String buildPdfScript(String token, boolean enabled, List<FieldPlacement> placements) {
     if (!enabled) {
       return "";
     }
     String pdfUrl = "/sign-web/pdf?token=" + token;
+    String placementsJson;
+    try {
+      placementsJson = objectMapper.writeValueAsString(placements);
+    } catch (Exception ex) {
+      placementsJson = "[]";
+    }
     return """
         <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
         <script>
@@ -488,6 +480,7 @@ public class SignWebController {
           pdfjsLib.GlobalWorkerOptions.workerSrc =
             'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
           const pdfLayer = document.getElementById('pdfLayer');
+          const fieldPlacements = %s;
           async function renderPdf() {
             const loadingTask = pdfjsLib.getDocument('%s');
             const pdf = await loadingTask.promise;
@@ -497,19 +490,128 @@ public class SignWebController {
               const viewport = page.getViewport({ scale: 1 });
               const scale = containerWidth / viewport.width;
               const scaled = page.getViewport({ scale });
+              const pageWrap = document.createElement('div');
+              pageWrap.className = 'pdf-page';
+              pageWrap.style.width = Math.floor(scaled.width) + 'px';
+              pageWrap.style.height = Math.floor(scaled.height) + 'px';
               const canvas = document.createElement('canvas');
               const context = canvas.getContext('2d');
               canvas.width = Math.floor(scaled.width);
               canvas.height = Math.floor(scaled.height);
-              pdfLayer.appendChild(canvas);
+              pageWrap.appendChild(canvas);
+              const overlay = document.createElement('div');
+              overlay.className = 'page-overlay';
+              pageWrap.appendChild(overlay);
+              pdfLayer.appendChild(pageWrap);
               await page.render({ canvasContext: context, viewport: scaled }).promise;
+              const pageFields = fieldPlacements.filter(f => f.pageIndex === (pageNum - 1));
+              pageFields.forEach(field => {
+                const input = document.createElement('input');
+                input.className = 'pdf-input';
+                input.setAttribute('data-field', field.name);
+                input.setAttribute('aria-label', field.name);
+                if (field.type === 'CHECKBOX') {
+                  input.type = 'checkbox';
+                  input.checked = !!field.checked;
+                } else {
+                  input.type = 'text';
+                  input.value = field.value || '';
+                }
+                const left = field.x * scale;
+                const top = (viewport.height - field.y - field.height) * scale;
+                input.style.left = left + 'px';
+                input.style.top = top + 'px';
+                input.style.width = Math.max(12, field.width * scale) + 'px';
+                input.style.height = Math.max(12, field.height * scale) + 'px';
+                overlay.appendChild(input);
+              });
             }
           }
           window.addEventListener('load', () => {
             renderPdf().catch(() => {});
           });
         </script>
-        """.formatted(pdfUrl);
+        """.formatted(placementsJson, pdfUrl);
+  }
+
+  private List<FieldPlacement> loadFieldPlacements(SignTemplateRegistry.TemplateDefinition template,
+                                                   Map<String, Object> prefill) {
+    List<FieldPlacement> placements = new ArrayList<>();
+    try (InputStream inputStream = templateRegistry.openTemplate(template.id());
+         PDDocument document = PDDocument.load(inputStream)) {
+      PDAcroForm form = document.getDocumentCatalog().getAcroForm();
+      if (form == null) {
+        return placements;
+      }
+      for (SignTemplateRegistry.FormField formField : template.formFields()) {
+        PDField field = form.getField(formField.name());
+        if (field == null) {
+          continue;
+        }
+        List<PDAnnotationWidget> widgets = field.getWidgets();
+        if (widgets == null || widgets.isEmpty()) {
+          continue;
+        }
+        for (PDAnnotationWidget widget : widgets) {
+          PDRectangle rect = widget.getRectangle();
+          if (rect == null) {
+            continue;
+          }
+          int pageIndex = resolvePageIndex(document, widget.getPage(), widget);
+          if (pageIndex < 0) {
+            continue;
+          }
+          Object prefillValue = prefill != null ? prefill.get(formField.name()) : null;
+          String value = null;
+          Boolean checked = null;
+          if (formField.type() == SignTemplateRegistry.FieldType.CHECKBOX) {
+            checked = toBoolean(prefillValue);
+          } else {
+            value = toText(prefillValue);
+          }
+          placements.add(new FieldPlacement(
+              formField.name(),
+              formField.type().name(),
+              pageIndex,
+              rect.getLowerLeftX(),
+              rect.getLowerLeftY(),
+              rect.getWidth(),
+              rect.getHeight(),
+              value,
+              checked
+          ));
+        }
+      }
+    } catch (Exception ex) {
+      return placements;
+    }
+    return placements;
+  }
+
+  private int resolvePageIndex(PDDocument document, PDPage page, PDAnnotationWidget widget) {
+    if (page != null) {
+      int index = document.getPages().indexOf(page);
+      if (index >= 0) {
+        return index;
+      }
+    }
+    try {
+      int pageIndex = 0;
+      for (PDPage p : document.getPages()) {
+        if (p.getAnnotations().contains(widget)) {
+          return pageIndex;
+        }
+        pageIndex++;
+      }
+    } catch (Exception ex) {
+      return -1;
+    }
+    return -1;
+  }
+
+  public record FieldPlacement(String name, String type, int pageIndex,
+                               float x, float y, float width, float height,
+                               String value, Boolean checked) {
   }
 
   private String renderField(SignTemplateRegistry.FormField field, Map<String, Object> prefill) {
