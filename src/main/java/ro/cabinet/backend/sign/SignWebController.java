@@ -1,6 +1,7 @@
 package ro.cabinet.backend.sign;
 
 import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +42,23 @@ public class SignWebController {
         .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
         .header(HttpHeaders.PRAGMA, "no-cache")
         .body(html.getBytes(StandardCharsets.UTF_8));
+  }
+
+  @GetMapping(value = "/sign-web/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+  public ResponseEntity<byte[]> signWebPdf(@RequestParam("token") String token) throws Exception {
+    SignSession session = signService.getSessionByToken(token);
+    SignTemplateId templateId = session.getTemplateId();
+    if (templateId != SignTemplateId.HEALTH_QUESTIONNAIRE) {
+      return ResponseEntity.notFound().build();
+    }
+    try (InputStream inputStream = templateRegistry.openTemplate(SignTemplateId.HEALTH_QUESTIONNAIRE)) {
+      byte[] pdfBytes = inputStream.readAllBytes();
+      return ResponseEntity.ok()
+          .contentType(MediaType.APPLICATION_PDF)
+          .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
+          .header(HttpHeaders.PRAGMA, "no-cache")
+          .body(pdfBytes);
+    }
   }
 
   @PostMapping(value = "/sign-web/submit", produces = MediaType.TEXT_HTML_VALUE)
@@ -89,6 +107,7 @@ public class SignWebController {
   private String buildPageHtml(String token, SignTemplateRegistry.TemplateDefinition template,
                                Map<String, Object> prefill) {
     StringBuilder fieldsHtml = new StringBuilder();
+    boolean usePdfBackground = template.id() == SignTemplateId.HEALTH_QUESTIONNAIRE;
     if (template.id() == SignTemplateId.HEALTH_QUESTIONNAIRE) {
       Set<String> prefillFields = Set.of("Name", "CNP", "Address", "Data");
       fieldsHtml.append("""
@@ -168,6 +187,23 @@ public class SignWebController {
           """.formatted(escapeHtml(field.label()), yesName, group, yesAttr, noName, group, noAttr));
       index++;
     }
+
+    String pdfStageHtml = usePdfBackground ? """
+        <div class="pdf-stage">
+          <div id="pdfLayer" class="pdf-layer"></div>
+          <div class="form-overlay">
+            <div class="grid">
+              %s
+            </div>
+            %s
+          </div>
+        </div>
+        """.formatted(fieldsHtml, questionsHtml) : """
+        <div class="grid">
+          %s
+        </div>
+        %s
+        """.formatted(fieldsHtml, questionsHtml);
 
     return """
         <!doctype html>
@@ -292,6 +328,35 @@ public class SignWebController {
             .primary { background: #1b5e20; color: #fff; }
             .secondary { background: #e3f2fd; color: #0d47a1; }
             .status { margin-top: 12px; font-size: 14px; color: #555; }
+            .pdf-stage {
+              position: relative;
+              border-radius: 18px;
+              overflow: hidden;
+              border: 1px solid rgba(20, 32, 43, 0.08);
+              background: #fff;
+            }
+            .pdf-layer {
+              position: relative;
+              z-index: 1;
+            }
+            .pdf-layer canvas {
+              display: block;
+              width: 100%%;
+              height: auto;
+              pointer-events: none;
+            }
+            .form-overlay {
+              position: absolute;
+              inset: 0;
+              z-index: 2;
+              padding: 16px;
+              pointer-events: none;
+            }
+            .form-overlay input,
+            .form-overlay label,
+            .form-overlay button {
+              pointer-events: auto;
+            }
             @media (max-width: 720px) {
               body { padding: 16px; }
               .card { padding: 20px; }
@@ -301,9 +366,6 @@ public class SignWebController {
         <body>
           <div class="card">
             <h2>Semnare document</h2>
-            <div class="grid">
-              %s
-            </div>
             %s
             <div class="signature">
               <label class="field">
@@ -408,9 +470,46 @@ public class SignWebController {
               }
             });
           </script>
+          %s
         </body>
         </html>
-        """.formatted(fieldsHtml, questionsHtml, token);
+        """.formatted(pdfStageHtml, token, buildPdfScript(token, usePdfBackground));
+  }
+
+  private String buildPdfScript(String token, boolean enabled) {
+    if (!enabled) {
+      return "";
+    }
+    String pdfUrl = "/sign-web/pdf?token=" + token;
+    return """
+        <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+        <script>
+          const pdfjsLib = window['pdfjs-dist/build/pdf'];
+          pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+          const pdfLayer = document.getElementById('pdfLayer');
+          async function renderPdf() {
+            const loadingTask = pdfjsLib.getDocument('%s');
+            const pdf = await loadingTask.promise;
+            const containerWidth = pdfLayer.getBoundingClientRect().width || 900;
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+              const page = await pdf.getPage(pageNum);
+              const viewport = page.getViewport({ scale: 1 });
+              const scale = containerWidth / viewport.width;
+              const scaled = page.getViewport({ scale });
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              canvas.width = Math.floor(scaled.width);
+              canvas.height = Math.floor(scaled.height);
+              pdfLayer.appendChild(canvas);
+              await page.render({ canvasContext: context, viewport: scaled }).promise;
+            }
+          }
+          window.addEventListener('load', () => {
+            renderPdf().catch(() => {});
+          });
+        </script>
+        """.formatted(pdfUrl);
   }
 
   private String renderField(SignTemplateRegistry.FormField field, Map<String, Object> prefill) {
