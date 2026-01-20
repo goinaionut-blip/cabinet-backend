@@ -70,6 +70,7 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/login").permitAll()
             .requestMatchers("/sign", "/sign/**").permitAll()
+            .requestMatchers("/sign-web", "/sign-web/**").permitAll()
             .requestMatchers("/upload", "/upload/**").permitAll()
             .requestMatchers("/done", "/done/**").permitAll()
             .requestMatchers("/api/sign/**").permitAll()

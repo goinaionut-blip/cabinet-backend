@@ -1,6 +1,7 @@
 package ro.cabinet.backend.sign;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.io.Resource;
@@ -33,18 +34,26 @@ public class SignApiController {
       throw new org.springframework.web.server.ResponseStatusException(
           org.springframework.http.HttpStatus.BAD_REQUEST, "Request body lipsa");
     }
+    SignTemplateId templateId = SignTemplateId.fromString(requestBody.templateId());
+    if (requestBody.templateId() != null && templateId == null) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.BAD_REQUEST, "Template invalid");
+    }
     SignSession session = signService.createSession(
         requestBody.documentId(),
         requestBody.patientId(),
-        requestBody.ttlMinutes()
+        requestBody.ttlMinutes(),
+        templateId
     );
     String signUrl = signService.buildPublicUrl(request, "/sign?token=" + session.getToken());
+    String signWebUrl = signService.buildPublicUrl(request, "/sign-web?token=" + session.getToken());
     String uploadUrl = signService.buildPublicUrl(request, "/upload?token=" + session.getToken());
     return new CreateSignSessionResponse(
         session.getToken(),
         session.getStatus(),
         session.getExpiresAt(),
         signUrl,
+        signWebUrl,
         uploadUrl
     );
   }
@@ -106,11 +115,13 @@ public class SignApiController {
     );
   }
 
-  public record CreateSignSessionRequest(String documentId, String patientId, Integer ttlMinutes) {
+  public record CreateSignSessionRequest(String documentId, String patientId, Integer ttlMinutes,
+                                         String templateId, Map<String, Object> formData) {
   }
 
   public record CreateSignSessionResponse(String token, SignSessionStatus status,
                                           OffsetDateTime expiresAt, String signUrl,
+                                          String signWebUrl,
                                           String uploadUrl) {
   }
 

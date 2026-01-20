@@ -1,13 +1,26 @@
 package ro.cabinet.backend.sign;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDCheckBox;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,14 +33,21 @@ public class SignService {
   private final SignSessionRepository repository;
   private final SignProperties properties;
   private final StorageService storageService;
+  private final SignTemplateRegistry templateRegistry;
 
-  public SignService(SignSessionRepository repository, SignProperties properties, StorageService storageService) {
+  public SignService(SignSessionRepository repository, SignProperties properties,
+                     StorageService storageService, SignTemplateRegistry templateRegistry) {
     this.repository = repository;
     this.properties = properties;
     this.storageService = storageService;
+    this.templateRegistry = templateRegistry;
   }
 
   public SignSession createSession(String documentId, String patientId, Integer ttlMinutes) {
+    return createSession(documentId, patientId, ttlMinutes, null);
+  }
+
+  public SignSession createSession(String documentId, String patientId, Integer ttlMinutes, SignTemplateId templateId) {
     if (documentId == null || documentId.isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "DocumentId lipsa");
     }
@@ -46,6 +66,7 @@ public class SignService {
     session.setStatus(SignSessionStatus.CREATED);
     session.setDocumentId(documentId);
     session.setPatientId(patientId);
+    session.setTemplateId(templateId);
     session.setCreatedAt(now);
     session.setExpiresAt(expiresAt);
     return repository.save(session);
@@ -121,6 +142,34 @@ public class SignService {
     repository.save(session);
   }
 
+  public void saveSignedFromWeb(SignSession session, Map<String, Object> formData,
+                                String signaturePngBase64) {
+    if (session.getTemplateId() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Template lipsa");
+    }
+    byte[] signatureBytes = decodePng(signaturePngBase64);
+    SignTemplateRegistry.TemplateDefinition template = templateRegistry.getTemplate(session.getTemplateId());
+    byte[] pdfBytes = generateSignedPdf(template, formData, signatureBytes);
+    String signedFilename = buildSignedFilename(session.getOriginalFilename(), session.getDocumentId());
+    try (InputStream inputStream = new ByteArrayInputStream(pdfBytes)) {
+      StorageService.StorageResult result = storageService.saveSigned(
+          session.getDocumentId(),
+          signedFilename,
+          inputStream
+      );
+      session.setSignedPath(result.path());
+      session.setSignedFilename(signedFilename);
+      session.setSignedContentType("application/pdf");
+      session.setSignedSha256(result.sha256());
+      session.setStatus(SignSessionStatus.SIGNED_UPLOADED);
+      repository.save(session);
+    } catch (ResponseStatusException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Nu pot salva PDF-ul semnat");
+    }
+  }
+
   public void saveOriginal(SignSession session, MultipartFile file) {
     if (file == null || file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fisier PDF lipsa");
@@ -179,6 +228,98 @@ public class SignService {
 
   private String sanitizeFilename(String value) {
     return value.replaceAll("[\\r\\n]", "_");
+  }
+
+  private byte[] generateSignedPdf(SignTemplateRegistry.TemplateDefinition template,
+                                   Map<String, Object> formData,
+                                   byte[] signatureBytes) {
+    try (InputStream inputStream = templateRegistry.openTemplate(template.id());
+         PDDocument document = PDDocument.load(inputStream);
+         ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+      PDAcroForm form = document.getDocumentCatalog().getAcroForm();
+      if (form != null && formData != null) {
+        form.setNeedAppearances(true);
+        for (Map.Entry<String, Object> entry : formData.entrySet()) {
+          if (entry.getKey() == null || entry.getKey().isBlank()) {
+            continue;
+          }
+          PDField field = form.getField(entry.getKey());
+          if (field == null) {
+            continue;
+          }
+          Object value = entry.getValue();
+          if (field instanceof PDCheckBox checkbox) {
+            boolean checked = toBoolean(value);
+            if (checked) {
+              checkbox.check();
+            } else {
+              checkbox.unCheck();
+            }
+          } else if (value != null) {
+            field.setValue(String.valueOf(value));
+          }
+        }
+      }
+
+      SignTemplateRegistry.SignaturePlacement placement = template.signaturePlacement();
+      PDPage page = document.getPage(placement.pageIndex());
+      PDImageXObject signatureImage = PDImageXObject.createFromByteArray(document, signatureBytes, "signature");
+      try (PDPageContentStream contentStream = new PDPageContentStream(
+          document, page, AppendMode.APPEND, true, true)) {
+        contentStream.drawImage(signatureImage, placement.x(), placement.y(),
+            placement.width(), placement.height());
+      }
+
+      if (form != null) {
+        form.flatten();
+      }
+      document.save(outputStream);
+      return outputStream.toByteArray();
+    } catch (ResponseStatusException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Nu pot genera PDF-ul semnat");
+    }
+  }
+
+  private byte[] decodePng(String signaturePngBase64) {
+    if (signaturePngBase64 == null || signaturePngBase64.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Semnatura lipsa");
+    }
+    String trimmed = signaturePngBase64.trim();
+    String prefix = "base64,";
+    int idx = trimmed.indexOf(prefix);
+    String encoded = idx >= 0 ? trimmed.substring(idx + prefix.length()) : trimmed;
+    try {
+      return Base64.getDecoder().decode(encoded);
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Semnatura invalida");
+    }
+  }
+
+  private boolean toBoolean(Object value) {
+    if (value == null) {
+      return false;
+    }
+    if (value instanceof Boolean bool) {
+      return bool;
+    }
+    String text = String.valueOf(value).trim();
+    return "true".equalsIgnoreCase(text) || "1".equals(text) || "yes".equalsIgnoreCase(text);
+  }
+
+  private String buildSignedFilename(String originalFilename, String documentId) {
+    if (originalFilename != null && !originalFilename.isBlank()) {
+      String cleaned = originalFilename.replace("\"", "").trim();
+      if (!cleaned.isBlank()) {
+        String withoutExt = cleaned.replaceAll("(?i)\\.pdf$", "");
+        if (!withoutExt.isBlank()) {
+          return withoutExt + "_signed.pdf";
+        }
+      }
+    }
+    String fallback = (documentId == null || documentId.isBlank()) ? "document_signed" : documentId + "_signed";
+    return fallback + ".pdf";
   }
 
   @Scheduled(fixedDelay = 300000)

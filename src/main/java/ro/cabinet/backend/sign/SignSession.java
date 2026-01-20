@@ -31,6 +31,10 @@ public class SignSession {
   @Column(name = "patient_id", length = 64)
   private String patientId;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "template_id", length = 32)
+  private SignTemplateId templateId;
+
   @Column(name = "original_filename")
   private String originalFilename;
 
@@ -119,6 +123,14 @@ public class SignSession {
 
   public void setPatientId(String patientId) {
     this.patientId = patientId;
+  }
+
+  public SignTemplateId getTemplateId() {
+    return templateId;
+  }
+
+  public void setTemplateId(SignTemplateId templateId) {
+    this.templateId = templateId;
   }
 
   public String getOriginalFilename() {
