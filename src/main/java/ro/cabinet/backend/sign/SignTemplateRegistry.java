@@ -1,8 +1,10 @@
 package ro.cabinet.backend.sign;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -59,182 +61,7 @@ public class SignTemplateRegistry {
           )
       ),
       SignTemplateId.HEALTH_QUESTIONNAIRE,
-      new TemplateDefinition(
-          SignTemplateId.HEALTH_QUESTIONNAIRE,
-          "sign-templates/health_questionnaire.pdf",
-          new SignaturePlacement(0, 360, 140, 180, 70),
-          List.of(
-              new FormField("undefined", "undefined", FieldType.TEXT),
-              new FormField("fill_5", "fill_5", FieldType.TEXT),
-              new FormField("2 Reprezentant legal al", "2 Reprezentant legal al", FieldType.TEXT),
-              new FormField("fill_7", "fill_7", FieldType.TEXT),
-              new FormField("fill_9", "fill_9", FieldType.TEXT),
-              new FormField("al pacientului ei", "al pacientului ei", FieldType.TEXT),
-              new FormField("fill_10", "Dacă sunteți gravidă, precizați ce vârstă are sarcina (în săptămâni)", FieldType.TEXT),
-              new FormField("nu_2", "Sunteți în perioada ciclului menstrual? – Nu", FieldType.CHECKBOX),
-              new FormField("fill_11", "Dacă răspunsul este afirmativ, precizați la ce anume:", FieldType.TEXT),
-              new FormField("da_3", "Suferiți de alergii sau intoleranțe medicamentoase sau nemedicamentoase? – Da", FieldType.CHECKBOX),
-              new FormField("nu_3", "Suferiți de alergii sau intoleranțe medicamentoase sau nemedicamentoase? – Nu", FieldType.CHECKBOX),
-              new FormField("fill_12", "fill_12", FieldType.TEXT),
-              new FormField("fill_13", "fill_13", FieldType.TEXT),
-              new FormField("fill_14", "fill_14", FieldType.TEXT),
-              new FormField("da_4", "Urmați un anumit tratament (medicamentos, homeopatic, fitoterapic etc.)? – Da", FieldType.CHECKBOX),
-              new FormField("nu_4", "Urmați un anumit tratament (medicamentos, homeopatic, fitoterapic etc.)? – Nu", FieldType.CHECKBOX),
-              new FormField("fill_15", "Dacă răspunsul este afirmativ, precizați medicamentul/produsul și doza administrată:", FieldType.TEXT),
-              new FormField("fill_16", "fill_16", FieldType.TEXT),
-              new FormField("fill_17", "fill_17", FieldType.TEXT),
-              new FormField("fill_18", "Dacă răspunsul este afirmativ, precizați medicamentul și doza:", FieldType.TEXT),
-              new FormField("fill_19", "Dacă răspunsul este afirmativ, precizați: a) medicamentul și doza administrată:", FieldType.TEXT),
-              new FormField("fill_20", "Dacă răspunsul este afirmativ, precizați: b) valoarea INR:", FieldType.TEXT),
-              new FormField("fill_21", "Dacă răspunsul este afirmativ, precizați: a) medicamentul și doza administrată:", FieldType.TEXT),
-              new FormField("fill_23", "Dacă răspunsul este afirmativ, precizați: d) valoarea β cross-laps:", FieldType.TEXT),
-              new FormField("undefined_2", "Dacă răspunsul este afirmativ, precizați: c) de cât timp urmați acest tratament (luni/ani)", FieldType.TEXT),
-              new FormField("da_8", "Suferiți sau ați suferit de vreo boală acută sau cronică? – Da", FieldType.CHECKBOX),
-              new FormField("nu_8", "Suferiți sau ați suferit de vreo boală acută sau cronică? – Nu", FieldType.CHECKBOX),
-              new FormField("fill_24", "Dacă răspunsul este afirmativ, precizați ce boală (i): boli congenitale", FieldType.TEXT),
-              new FormField("boli congenitale", "Boli congenitale", FieldType.CHECKBOX),
-              new FormField("boli profesionale", "Boli profesionale", FieldType.CHECKBOX),
-              new FormField("undefined_3", "Dacă răspunsul este afirmativ, precizați ce boală (i): boli profesionale", FieldType.TEXT),
-              new FormField("toggle_21", "Boli de inimă: angină pectorală", FieldType.CHECKBOX),
-              new FormField("toggle_22", "Boli de inimă: infarct miocardic", FieldType.CHECKBOX),
-              new FormField("undefined_4", "Boli de inimă: infarct miocardic (precizați când)", FieldType.TEXT),
-              new FormField("blocuri", "Boli de inimă: blocuri", FieldType.CHECKBOX),
-              new FormField("toggle_25", "Boli de inimă: insuficiență cardiacă", FieldType.CHECKBOX),
-              new FormField("undefined_5", "Boli de inimă: insuficiență cardiacă (precizați clasa NYHA)", FieldType.TEXT),
-              new FormField("toggle_23", "Boli de inimă: aritmii (fibrilație etc.)", FieldType.CHECKBOX),
-              new FormField("toggle_26", "Boli de inimă: valvulopatii", FieldType.CHECKBOX),
-              new FormField("toggle_28", "Boli de inimă: intervenții chirurgicale cardiace", FieldType.CHECKBOX),
-              new FormField("undefined_6", "Boli de inimă: valvulopatii (precizați care)", FieldType.TEXT),
-              new FormField("undefined_7", "Boli de inimă: intervenții chirurgicale cardiace (precizați)", FieldType.TEXT),
-              new FormField("toggle_27", "Boli de inimă: endocardită infecțioasă", FieldType.CHECKBOX),
-              new FormField("altele", "Altele", FieldType.CHECKBOX),
-              new FormField("undefined_8", "Altele (precizați)", FieldType.TEXT),
-              new FormField("fill_32", "fill_32", FieldType.TEXT),
-              new FormField("boli vasculare", "boli vasculare", FieldType.CHECKBOX),
-              new FormField("boli ale aparatului respirator", "boli ale aparatului respirator", FieldType.CHECKBOX),
-              new FormField("toggle_1", "toggle_1", FieldType.CHECKBOX),
-              new FormField("toggle_2", "toggle_2", FieldType.CHECKBOX),
-              new FormField("toggle_3", "toggle_3", FieldType.CHECKBOX),
-              new FormField("fill_1_2", "fill_1_2", FieldType.TEXT),
-              new FormField("fill_2", "fill_2", FieldType.TEXT),
-              new FormField("undefined_9", "undefined_9", FieldType.CHECKBOX),
-              new FormField("altele_2", "altele_2", FieldType.TEXT),
-              new FormField("toggle_7", "toggle_7", FieldType.CHECKBOX),
-              new FormField("emfizem", "emfizem", FieldType.CHECKBOX),
-              new FormField("toggle_9", "toggle_9", FieldType.CHECKBOX),
-              new FormField("toggle_10", "toggle_10", FieldType.CHECKBOX),
-              new FormField("fill_4", "fill_4", FieldType.TEXT),
-              new FormField("undefined_10", "undefined_10", FieldType.CHECKBOX),
-              new FormField("altele_3", "altele_3", FieldType.TEXT),
-              new FormField("gastriteulcer gastroduodenal", "gastriteulcer gastroduodenal", FieldType.CHECKBOX),
-              new FormField("undefined_11", "undefined_11", FieldType.CHECKBOX),
-              new FormField("altele_4", "altele_4", FieldType.TEXT),
-              new FormField("toggle_14", "toggle_14", FieldType.CHECKBOX),
-              new FormField("toggle_15_2", "toggle_15_2", FieldType.CHECKBOX),
-              new FormField("toggle_16_2", "toggle_16_2", FieldType.CHECKBOX),
-              new FormField("undefined_12", "undefined_12", FieldType.CHECKBOX),
-              new FormField("altele_5", "altele_5", FieldType.TEXT),
-              new FormField("boli renale", "boli renale", FieldType.CHECKBOX),
-              new FormField("fill_8", "fill_8", FieldType.TEXT),
-              new FormField("toggle_19", "toggle_19", FieldType.CHECKBOX),
-              new FormField("tratament cu antidiabetice orale", "tratament cu antidiabetice orale", FieldType.CHECKBOX),
-              new FormField("hipotiroidie", "hipotiroidie", FieldType.CHECKBOX),
-              new FormField("hipertiroidie", "hipertiroidie", FieldType.CHECKBOX),
-              new FormField("undefined_13", "undefined_13", FieldType.CHECKBOX),
-              new FormField("altele_6", "altele_6", FieldType.TEXT),
-              new FormField("toggle_24", "toggle_24", FieldType.CHECKBOX),
-              new FormField("colagenoze", "colagenoze", FieldType.CHECKBOX),
-              new FormField("undefined_14", "undefined_14", FieldType.CHECKBOX),
-              new FormField("altele_7", "altele_7", FieldType.TEXT),
-              new FormField("toggle_27_2", "toggle_27_2", FieldType.CHECKBOX),
-              new FormField("undefined_15", "undefined_15", FieldType.CHECKBOX),
-              new FormField("altele_8", "altele_8", FieldType.TEXT),
-              new FormField("epilepsie", "epilepsie", FieldType.CHECKBOX),
-              new FormField("undefined_16", "undefined_16", FieldType.CHECKBOX),
-              new FormField("altele_9", "altele_9", FieldType.TEXT),
-              new FormField("depresie", "depresie", FieldType.CHECKBOX),
-              new FormField("schizofrenie", "schizofrenie", FieldType.CHECKBOX),
-              new FormField("undefined_17", "undefined_17", FieldType.CHECKBOX),
-              new FormField("altele_10", "altele_10", FieldType.TEXT),
-              new FormField("toggle_34", "toggle_34", FieldType.CHECKBOX),
-              new FormField("anemie", "anemie", FieldType.CHECKBOX),
-              new FormField("thalasemie", "thalasemie", FieldType.CHECKBOX),
-              new FormField("toggle_37", "toggle_37", FieldType.CHECKBOX),
-              new FormField("toggle_38", "toggle_38", FieldType.CHECKBOX),
-              new FormField("hemofilie", "hemofilie", FieldType.CHECKBOX),
-              new FormField("trombocitopenie", "trombocitopenie", FieldType.CHECKBOX),
-              new FormField("boala von Willebrand", "boala von Willebrand", FieldType.CHECKBOX),
-              new FormField("undefined_18", "undefined_18", FieldType.CHECKBOX),
-              new FormField("altele_11", "altele_11", FieldType.TEXT),
-              new FormField("toggle_43", "toggle_43", FieldType.CHECKBOX),
-              new FormField("B", "B", FieldType.CHECKBOX),
-              new FormField("C", "C", FieldType.CHECKBOX),
-              new FormField("D", "D", FieldType.CHECKBOX),
-              new FormField("HIV", "HIV", FieldType.CHECKBOX),
-              new FormField("undefined_19", "undefined_19", FieldType.CHECKBOX),
-              new FormField("altele_12", "altele_12", FieldType.TEXT),
-              new FormField("neoplasme", "neoplasme", FieldType.TEXT),
-              new FormField("alte boli", "alte boli", FieldType.TEXT),
-              new FormField("da_9", "da_9", FieldType.CHECKBOX),
-              new FormField("nu_9", "nu_9", FieldType.CHECKBOX),
-              new FormField("fill_18_2", "fill_18_2", FieldType.TEXT),
-              new FormField("fill_19_2", "fill_19_2", FieldType.TEXT),
-              new FormField("toggle_51", "toggle_51", FieldType.CHECKBOX),
-              new FormField("sedare", "sedare", FieldType.CHECKBOX),
-              new FormField("altul", "altul", FieldType.TEXT),
-              new FormField("toggle_53", "toggle_53", FieldType.CHECKBOX),
-              new FormField("toggle_54", "toggle_54", FieldType.CHECKBOX),
-              new FormField("nu_10", "nu_10", FieldType.CHECKBOX),
-              new FormField("undefined_20", "undefined_20", FieldType.CHECKBOX),
-              new FormField("fill_21_2", "fill_21_2", FieldType.TEXT),
-              new FormField("fill_22", "fill_22", FieldType.TEXT),
-              new FormField("da_10", "da_10", FieldType.CHECKBOX),
-              new FormField("nu_11", "nu_11", FieldType.CHECKBOX),
-              new FormField("da_11", "da_11", FieldType.CHECKBOX),
-              new FormField("nu_12", "nu_12", FieldType.CHECKBOX),
-              new FormField("toggle_62", "toggle_62", FieldType.CHECKBOX),
-              new FormField("toggle_61", "toggle_61", FieldType.CHECKBOX),
-              new FormField("toggle_64", "toggle_64", FieldType.CHECKBOX),
-              new FormField("toggle_63", "toggle_63", FieldType.CHECKBOX),
-              new FormField("toggle_65", "toggle_65", FieldType.CHECKBOX),
-              new FormField("toggle_71", "toggle_71", FieldType.CHECKBOX),
-              new FormField("toggle_68", "toggle_68", FieldType.CHECKBOX),
-              new FormField("toggle_69", "toggle_69", FieldType.CHECKBOX),
-              new FormField("alergii", "alergii", FieldType.CHECKBOX),
-              new FormField("da_12", "da_12", FieldType.CHECKBOX),
-              new FormField("nu_13", "nu_13", FieldType.CHECKBOX),
-              new FormField("altele_13", "altele_13", FieldType.TEXT),
-              new FormField("toggle_73", "toggle_73", FieldType.CHECKBOX),
-              new FormField("nu_14", "nu_14", FieldType.CHECKBOX),
-              new FormField("fill_24_2", "fill_24_2", FieldType.TEXT),
-              new FormField("nu_15", "nu_15", FieldType.CHECKBOX),
-              new FormField("undefined_21", "undefined_21", FieldType.CHECKBOX),
-              new FormField("fill_25", "fill_25", FieldType.TEXT),
-              new FormField("alcool", "alcool", FieldType.TEXT),
-              new FormField("droguri", "droguri", FieldType.CHECKBOX),
-              new FormField("fill_27", "fill_27", FieldType.TEXT),
-              new FormField("fill_28", "fill_28", FieldType.TEXT),
-              new FormField("nu_16", "nu_16", FieldType.CHECKBOX),
-              new FormField("toggle_78", "toggle_78", FieldType.CHECKBOX),
-              new FormField("Address", "Address", FieldType.TEXT),
-              new FormField("CNP", "CNP", FieldType.TEXT),
-              new FormField("da_2", "Sunteți în perioada ciclului menstrual? – Da", FieldType.CHECKBOX),
-              new FormField("nu", "Sunteți/este posibil să fiți gravidă? – Nu", FieldType.CHECKBOX),
-              new FormField("da", "Sunteți/este posibil să fiți gravidă? – Da", FieldType.CHECKBOX),
-              new FormField("toggle_16", "Calea de administrare: orală", FieldType.CHECKBOX),
-              new FormField("toggle_15", "Calea de administrare: intravenoasă", FieldType.CHECKBOX),
-              new FormField("nu_7", "Urmați tratament cu: Fosamax, Fosavance, Actonel, Bonviva, Zometa, Aclasta (bifosfonați)? – Nu", FieldType.CHECKBOX),
-              new FormField("da_7", "Urmați tratament cu: Fosamax, Fosavance, Actonel, Bonviva, Zometa, Aclasta (bifosfonați)? – Da", FieldType.CHECKBOX),
-              new FormField("nu_6", "Urmați tratament cu anticoagulante? – Nu", FieldType.CHECKBOX),
-              new FormField("da_6", "Urmați tratament cu anticoagulante? – Da", FieldType.CHECKBOX),
-              new FormField("Check Box1", "Ați urmat tratament cu antibiotice în ultimele două săptămâni? – Da", FieldType.CHECKBOX),
-              new FormField("Check Box2", "Ați urmat tratament cu antibiotice în ultimele două săptămâni? – Nu", FieldType.CHECKBOX),
-              new FormField("Name", "Name", FieldType.TEXT),
-              new FormField("Data", "Data", FieldType.TEXT)
-          ),
-          null,
-          List.of()
-      ),
+      loadHealthTemplate(),
       SignTemplateId.GDPR,
       new TemplateDefinition(
           SignTemplateId.GDPR,
@@ -248,6 +75,45 @@ public class SignTemplateRegistry {
           List.of()
       )
   );
+
+
+  private static TemplateDefinition loadHealthTemplate() {
+    TemplateSpec spec = readHealthSpec();
+    List<FormField> formFields = spec.formFields() == null ? List.of() : spec.formFields();
+    List<YesNoField> yesNoFields = spec.yesNoFields() == null ? List.of() : spec.yesNoFields();
+    return new TemplateDefinition(
+        SignTemplateId.HEALTH_QUESTIONNAIRE,
+        spec.resource(),
+        spec.signaturePlacement(),
+        formFields,
+        spec.questionsHeader(),
+        yesNoFields
+    );
+  }
+
+  private static TemplateSpec readHealthSpec() {
+    ObjectMapper objectMapper = new ObjectMapper();
+    ClassPathResource resource = new ClassPathResource("sign-templates/forms_health.json");
+    if (resource.exists()) {
+      try (InputStream input = resource.getInputStream()) {
+        return objectMapper.readValue(input, TemplateSpec.class);
+      } catch (IOException ex) {
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+            "Nu pot incarca forms_health.json din resources", ex);
+      }
+    }
+
+    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+        "Nu gasesc forms_health.json");
+  }
+
+  private record TemplateSpec(String templateId,
+                              String resource,
+                              SignaturePlacement signaturePlacement,
+                              String questionsHeader,
+                              List<YesNoField> yesNoFields,
+                              List<FormField> formFields) {
+  }
 
   public TemplateDefinition getTemplate(SignTemplateId templateId) {
     TemplateDefinition definition = templates.get(templateId);

@@ -1,0 +1,780 @@
+{
+  "templateId": "HEALTH_QUESTIONNAIRE",
+  "resource": "sign-templates/health_questionnaire.pdf",
+  "signaturePlacement": {
+    "pageIndex": 0,
+    "x": 360.0,
+    "y": 140.0,
+    "width": 180.0,
+    "height": 70.0
+  },
+  "questionsHeader": null,
+  "yesNoFields": [],
+  "formFields": [
+    {
+      "name": "nu",
+      "label": "Sunteți/este posibil să fiți gravidă? – Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "da",
+      "label": "Sunteți/este posibil să fiți gravidă? – Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_10",
+      "label": "Dacă sunteți gravidă, precizați ce vârstă are sarcina (în săptămâni)",
+      "type": "TEXT"
+    },
+    {
+      "name": "da_2",
+      "label": "Sunteți în perioada ciclului menstrual? – Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_2",
+      "label": "Sunteți în perioada ciclului menstrual? – Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "da_3",
+      "label": "Suferiți de alergii sau intoleranțe medicamentoase sau nemedicamentoase? – Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_3",
+      "label": "Suferiți de alergii sau intoleranțe medicamentoase sau nemedicamentoase? – Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_11",
+      "label": "Dacă răspunsul este afirmativ, precizați la ce anume:",
+      "type": "TEXT"
+    },
+    {
+      "name": "da_4",
+      "label": "Urmați un anumit tratament (medicamentos, homeopatic, fitoterapic etc.)? – Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_4",
+      "label": "Urmați un anumit tratament (medicamentos, homeopatic, fitoterapic etc.)? – Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_15",
+      "label": "Dacă răspunsul este afirmativ, precizați medicamentul/produsul și doza administrată:",
+      "type": "TEXT"
+    },
+    {
+      "name": "Check Box1",
+      "label": "Ați urmat tratament cu antibiotice în ultimele două săptămâni? – Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "Check Box2",
+      "label": "Ați urmat tratament cu antibiotice în ultimele două săptămâni? – Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_18",
+      "label": "Dacă răspunsul este afirmativ, precizați medicamentul și doza:",
+      "type": "TEXT"
+    },
+    {
+      "name": "da_6",
+      "label": "Urmați tratament cu anticoagulante? – Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_6",
+      "label": "Urmați tratament cu anticoagulante? – Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_19",
+      "label": "Dacă răspunsul este afirmativ, precizați: a) medicamentul și doza administrată:",
+      "type": "TEXT"
+    },
+    {
+      "name": "fill_20",
+      "label": "Dacă răspunsul este afirmativ, precizați: b) valoarea INR:",
+      "type": "TEXT"
+    },
+    {
+      "name": "da_7",
+      "label": "Urmați tratament cu: Fosamax, Fosavance, Actonel, Bonviva, Zometa, Aclasta (bifosfonați)? – Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_7",
+      "label": "Urmați tratament cu: Fosamax, Fosavance, Actonel, Bonviva, Zometa, Aclasta (bifosfonați)? – Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_21",
+      "label": "Dacă răspunsul este afirmativ, precizați: a) medicamentul și doza administrată:",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_16",
+      "label": "b) Calea de administrare: orală",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_15",
+      "label": "Calea de administrare: intravenoasă",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_2",
+      "label": "c) de cât timp urmați acest tratament (luni/ani)",
+      "type": "TEXT"
+    },
+    {
+      "name": "fill_23",
+      "label": "d) valoarea β cross-laps:",
+      "type": "TEXT"
+    },
+    {
+      "name": "da_8",
+      "label": "Suferiți sau ați suferit de vreo boală acută sau cronică? – Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_8",
+      "label": "Suferiți sau ați suferit de vreo boală acută sau cronică? – Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "boli congenitale",
+      "label": "Dacă răspunsul este afirmativ, precizați ce boală (i): Boli congenitale",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_24",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "boli profesionale",
+      "label": "Boli profesionale",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_3",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_21",
+      "label": "Boli de inimă: angină pectorală",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_22",
+      "label": "infarct miocardic",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_4",
+      "label": "(precizați când)",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_23",
+      "label": "aritmii (fibrilație etc.)",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "blocuri",
+      "label": "Boli de inimă: blocuri",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_25",
+      "label": "Boli de inimă: insuficiență cardiacă",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_5",
+      "label": "(precizați clasa NYHA)",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_26",
+      "label": "Boli de inimă: valvulopatii",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_6",
+      "label": "(precizați care)",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_27",
+      "label": "Boli de inimă: endocardită infecțioasă",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_28",
+      "label": "Boli de inimă: intervenții chirurgicale cardiace",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_7",
+      "label": "(precizați)",
+      "type": "TEXT"
+    },
+    {
+      "name": "altele",
+      "label": "Altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_8",
+      "label": "Altele (precizați)",
+      "type": "TEXT"
+    },
+    {
+      "name": "fill_32",
+      "label": "fill_32",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_1",
+      "label": "boli vasculare: arteriopatie obliterantă",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_2",
+      "label": "tromboflebită",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_3",
+      "label": "hipotensiune arterială",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "boli vasculare",
+      "label": "hipertensiune arterială ",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_1_2",
+      "label": "precizați cea mai mare valoare tensională avută mmHg",
+      "type": "TEXT"
+    },
+    {
+      "name": "boli ale aparatului respirator",
+      "label": "accident vascular cerebral ",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_2",
+      "label": "precizați când:",
+      "type": "TEXT"
+    },
+    {
+      "name": "undefined_9",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_2",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_7",
+      "label": "boli ale aparatului respirator astm bronsic",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "emfizem",
+      "label": "emfizem",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_9",
+      "label": "bronșită",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_10",
+      "label": "TBC",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_4",
+      "label": "precizați dacă ați urmat tratament",
+      "type": "TEXT"
+    },
+    {
+      "name": "undefined_10",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_3",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "gastriteulcer gastroduodenal",
+      "label": "boli digestive gastriteulcer gastroduodenal",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_11",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_4",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_14",
+      "label": "boli hepatice steatoză hepatică",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_15_2",
+      "label": "hepatită cronică",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_16_2",
+      "label": "ciroză",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_12",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_5",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "boli renale",
+      "label": "boli renale insuficiență renală ",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_8",
+      "label": "precizați dacă urmați hemodializă",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_19",
+      "label": "diabet, tratament cu insulină",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "tratament cu antidiabetice orale",
+      "label": "tratament cu antidiabetice orale",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "hipotiroidie",
+      "label": "boli endocrine: hipotiroidie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "hipertiroidie",
+      "label": "hipertiroidie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_13",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_6",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_24",
+      "label": "boli reumatismale: poliartrită reumatoidă",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "colagenoze",
+      "label": "colagenoze",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_14",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_7",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_27_2",
+      "label": "boli scheletale : osteoporoză",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_15",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_8",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "epilepsie",
+      "label": "boli neurologice : epilepsie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_16",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_9",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "depresie",
+      "label": "boli psihice : depresie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "schizofrenie",
+      "label": "schizofrenie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_17",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_10",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_34",
+      "label": "manifestări neuro-vegetative : atacuri de panică",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "anemie",
+      "label": "boli hematologice : anemie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "thalasemie",
+      "label": "thalasemie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_37",
+      "label": "leucemie acută",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_38",
+      "label": "leucemie cronică",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "hemofilie",
+      "label": "hemofilie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "trombocitopenie",
+      "label": "trombocitopenie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "boala von Willebrand",
+      "label": "boala von Willebrand",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_18",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_11",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_43",
+      "label": "boli infecțioase: hepatită virală",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "B",
+      "label": "B",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "C",
+      "label": "C",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "D",
+      "label": "D",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "HIV",
+      "label": "HIV",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_19",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_12",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "neoplasme",
+      "label": "neoplasme",
+      "type": "TEXT"
+    },
+    {
+      "name": "alte boli",
+      "label": "alte boli",
+      "type": "TEXT"
+    },
+    {
+      "name": "da_9",
+      "label": "Ați mai fost supus(ă) unor intervenții chirurgicale? Da ",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_9",
+      "label": "Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_18_2",
+      "label": "Dacă răspunsul este afirmativ, precizați ce intervenție (i):",
+      "type": "TEXT"
+    },
+    {
+      "name": "toggle_51",
+      "label": "Dacă răspunsul este afirmativ, precizați tipul de anestezie: loco-regională",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "sedare",
+      "label": "sedare",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_53",
+      "label": "generală",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_54",
+      "label": "altul",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altul",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "nu_10",
+      "label": "Dacă răspunsul este afirmativ, precizați dacă în timpul sau după intervenția chirurgicală au apărut incidente, NU:",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_20",
+      "label": "DA:",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_21_2",
+      "label": "precizați ce anume:",
+      "type": "TEXT"
+    },
+    {
+      "name": "da_10",
+      "label": "Ați primit transfuzii de sânge/derivate: Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_11",
+      "label": "Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "da_11",
+      "label": "Vi s-au mai efectuat tratamente stomatologice? Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_12",
+      "label": "nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_62",
+      "label": "Mi s-au realizat tratamente stomatologice: cu anestezie locală:",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_61",
+      "label": "fără anestezie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_64",
+      "label": "cu anestezie locală și sedare intravenoasă",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_63",
+      "label": "cu anestezie locală și sedare inhalatorie",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_65",
+      "label": "cu anestezie generală",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "da_12",
+      "label": "La tratamentele stomatologice anterioare au apărut accidente/incidente sau complicații la utilizarea anestezicelor? Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "nu_13",
+      "label": "Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_68",
+      "label": "au apărut: lesin",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_69",
+      "label": "greață",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "alergii",
+      "label": "alergii",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_71",
+      "label": "altele",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "altele_13",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "nu_14",
+      "label": "Sunteți/ați fost consumator de: tutun? Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_73",
+      "label": "Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_24_2",
+      "label": "precizați ce cantitate și cât timp ați fumat/fumați)",
+      "type": "TEXT"
+    },
+    {
+      "name": "nu_15",
+      "label": "alcool? Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "undefined_21",
+      "label": "da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "alcool",
+      "label": "precizați ce cantitate și cât timp ați consumat/consumați alcool",
+      "type": "TEXT"
+    },
+    {
+      "name": "droguri",
+      "label": "ați avut problema atunci când nu ați mai consumat alcool?",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_27",
+      "label": ":",
+      "type": "TEXT"
+    },
+    {
+      "name": "nu_16",
+      "label": "droguri? Nu",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "toggle_78",
+      "label": "Da",
+      "type": "CHECKBOX"
+    },
+    {
+      "name": "fill_28",
+      "label": "precizați ce drog/droguri utilizați:",
+      "type": "TEXT"
+    },
+    {
+      "name": "Address",
+      "label": "Address",
+      "type": "TEXT"
+    },
+    {
+      "name": "CNP",
+      "label": "CNP",
+      "type": "TEXT"
+    },
+    {
+      "name": "Name",
+      "label": "Name",
+      "type": "TEXT"
+    },
+    {
+      "name": "Data",
+      "label": "Data",
+      "type": "TEXT"
+    }
+  ]
+}
