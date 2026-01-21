@@ -90,7 +90,8 @@ public class SignWebController {
                                Map<String, Object> prefill) {
     StringBuilder fieldsHtml = new StringBuilder();
     if (template.id() == SignTemplateId.HEALTH_QUESTIONNAIRE) {
-      Set<String> prefillFields = Set.of("Name", "CNP", "Address", "Data");
+      List<String> prefillOrder = List.of("Name", "CNP", "Address", "Data");
+      Set<String> prefillFields = Set.copyOf(prefillOrder);
       fieldsHtml.append("""
           <section class="section">
             <div class="section-header">
@@ -99,11 +100,17 @@ public class SignWebController {
             </div>
             <div class="grid two">
           """);
+      Map<String, SignTemplateRegistry.FormField> prefillMap = new LinkedHashMap<>();
       for (SignTemplateRegistry.FormField field : template.formFields()) {
-        if (!prefillFields.contains(field.name())) {
-          continue;
+        if (prefillFields.contains(field.name())) {
+          prefillMap.put(field.name(), field);
         }
-        fieldsHtml.append(renderField(field, prefill));
+      }
+      for (String name : prefillOrder) {
+        SignTemplateRegistry.FormField field = prefillMap.get(name);
+        if (field != null) {
+          fieldsHtml.append(renderField(field, prefill));
+        }
       }
       fieldsHtml.append("""
             </div>
@@ -237,6 +244,13 @@ public class SignWebController {
               grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             }
             .field { display: grid; gap: 6px; font-size: 14px; }
+            .label-only {
+              padding: 6px 8px;
+              border-left: 3px solid #b2c3d6;
+              background: #f9fafb;
+              border-radius: 10px;
+              color: #1f2937;
+            }
             .field input[type="text"] {
               padding: 10px 12px;
               border-radius: 10px;
@@ -420,6 +434,13 @@ public class SignWebController {
   private String renderField(SignTemplateRegistry.FormField field, Map<String, Object> prefill) {
     String safeName = escapeHtml(field.name());
     String safeLabel = escapeHtml(field.label());
+    if (field.type() == SignTemplateRegistry.FieldType.LABEL) {
+      return """
+          <div class="field label-only">
+            <span>%s</span>
+          </div>
+          """.formatted(safeLabel);
+    }
     if (field.type() == SignTemplateRegistry.FieldType.CHECKBOX) {
       boolean checked = toBoolean(prefill.get(field.name()));
       String checkedAttr = checked ? " checked" : "";

@@ -154,6 +154,7 @@ public class SignTemplateRegistry {
 
   public enum FieldType {
     TEXT,
-    CHECKBOX
+    CHECKBOX,
+    LABEL
   }
 }
