@@ -38,8 +38,28 @@ app:
   auth:
     users:
       - username: diana
-        password: ArgosFifi
+        password: ${PAROLA_ADMIN}
         
       - username: asistenta
-        password: DeNeuitat
-        
+        password: ${PAROLA_ASISTENTA}
+
+efactura:
+  enabled: true
+  environment: test   # test | prod
+  cif: "27316839"
+  client-id: ${ANAF_CLIENT_ID}
+  client-secret: ${ANAF_CLIENT_SECRET}
+  redirect-uri:
+    swing: http://localhost:8765/oauth/callback
+    backend: https://cabinet-backend-production-31b3.up.railway.app/api/efactura/oauth/callback
+  oauth:
+    authorize-url: https://logincert.anaf.ro/anaf-oauth2/v1/authorize
+    token-url: https://logincert.anaf.ro/anaf-oauth2/v1/token
+  api:
+    base-test: https://api.anaf.ro/test
+    base-prod: https://api.anaf.ro/prod
+    list-days: 60
+    upload-path: /FCTEL/rest/upload?standard=UBL&cif={cif}
+    status-path: /FCTEL/rest/stareMesaj?id_incarcare={index}
+    list-path: /FCTEL/rest/listaMesaje
+    download-path: /FCTEL/rest/descarcare?id={id}
