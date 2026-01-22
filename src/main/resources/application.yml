@@ -61,5 +61,5 @@ efactura:
     list-days: 60
     upload-path: /FCTEL/rest/upload?standard=UBL&cif={cif}
     status-path: /FCTEL/rest/stareMesaj?id_incarcare={index}
-    list-path: /FCTEL/rest/listaMesaje
+    list-path: /FCTEL/rest/listaMesajeFactura
     download-path: /FCTEL/rest/descarcare?id={id}
