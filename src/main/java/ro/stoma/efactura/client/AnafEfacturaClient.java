@@ -18,9 +18,12 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class AnafEfacturaClient {
+  private static final Logger log = LoggerFactory.getLogger(AnafEfacturaClient.class);
   private final EfacturaProperties properties;
   private final RestTemplate restTemplate;
 
@@ -42,6 +45,7 @@ public class AnafEfacturaClient {
     Assert.notNull(xml, "xml is required");
     ResponseEntity<byte[]> response = executeWithRetry(() -> {
       String url = buildUrl(properties.getApi().getUploadPath(), Map.of("cif", properties.getCif()));
+      log.info("ANAF upload URL={}", url);
       HttpHeaders headers = bearerHeaders(accessToken);
       // ANAF specific: upload expects UBL XML payload.
       headers.setContentType(MediaType.APPLICATION_XML);
@@ -55,6 +59,7 @@ public class AnafEfacturaClient {
   public String getStatus(String indexIncarcare, String accessToken) {
     ResponseEntity<byte[]> response = executeWithRetry(() -> {
       String url = buildUrl(properties.getApi().getStatusPath(), Map.of("index", indexIncarcare));
+      log.info("ANAF status URL={}", url);
       HttpHeaders headers = bearerHeaders(accessToken);
       ResponseEntity<byte[]> entity = restTemplate.exchange(
           url, HttpMethod.GET, new HttpEntity<>(headers), byte[].class);
@@ -73,6 +78,7 @@ public class AnafEfacturaClient {
           .queryParam("zile", listDays)
           .build()
           .toUriString();
+      log.info("ANAF list URL={}", url);
       HttpHeaders headers = bearerHeaders(accessToken);
       ResponseEntity<byte[]> entity = restTemplate.exchange(
           url, HttpMethod.GET, new HttpEntity<>(headers), byte[].class);
@@ -84,6 +90,7 @@ public class AnafEfacturaClient {
   public byte[] download(String id, String accessToken) {
     ResponseEntity<byte[]> response = executeWithRetry(() -> {
       String url = buildUrl(properties.getApi().getDownloadPath(), Map.of("id", id));
+      log.info("ANAF download URL={}", url);
       HttpHeaders headers = bearerHeaders(accessToken);
       ResponseEntity<byte[]> entity = restTemplate.exchange(
           url, HttpMethod.GET, new HttpEntity<>(headers), byte[].class);
