@@ -86,6 +86,16 @@ public class AnafOAuthService {
     return tokenRef.get() != null;
   }
 
+  public String pingAuthorizeEndpoint() {
+    try {
+      ResponseEntity<String> response = restTemplate.getForEntity(
+          properties.getOauth().getAuthorizeUrl(), String.class);
+      return "OK " + response.getStatusCode().value();
+    } catch (Exception ex) {
+      return "ERROR " + ex.getClass().getSimpleName() + ": " + ex.getMessage();
+    }
+  }
+
   private AnafToken refreshToken(AnafToken existing) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "refresh_token");
