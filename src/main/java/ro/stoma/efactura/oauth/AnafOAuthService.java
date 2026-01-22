@@ -96,6 +96,34 @@ public class AnafOAuthService {
     }
   }
 
+  public String pingTokenEndpoint() {
+    MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+    form.add("grant_type", "authorization_code");
+    form.add("code", "invalid");
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+    try {
+      ResponseEntity<String> response = restTemplate.postForEntity(
+          properties.getOauth().getTokenUrl(),
+          new HttpEntity<>(form, headers),
+          String.class);
+      return "OK " + response.getStatusCode().value() + " " + safeBody(response.getBody());
+    } catch (Exception ex) {
+      return "ERROR " + ex.getClass().getSimpleName() + ": " + ex.getMessage();
+    }
+  }
+
+  private String safeBody(String body) {
+    if (body == null) {
+      return "";
+    }
+    String trimmed = body.trim();
+    if (trimmed.length() > 200) {
+      return trimmed.substring(0, 200) + "...";
+    }
+    return trimmed;
+  }
+
   private AnafToken refreshToken(AnafToken existing) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "refresh_token");

@@ -37,4 +37,9 @@ public class AnafOAuthController {
   public String pingAnaf() {
     return oauthService.pingAuthorizeEndpoint();
   }
+
+  @GetMapping(value = "/ping-anaf-token", produces = MediaType.TEXT_PLAIN_VALUE)
+  public String pingAnafToken() {
+    return oauthService.pingTokenEndpoint();
+  }
 }
