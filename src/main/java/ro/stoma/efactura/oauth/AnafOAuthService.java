@@ -57,6 +57,7 @@ public class AnafOAuthService {
         .queryParam("response_type", "code")
         .queryParam("client_id", properties.getClientId())
         .queryParam("redirect_uri", redirectUri)
+        .queryParam("token_content_type", "jwt")
         .build()
         .toUriString();
   }
@@ -69,6 +70,7 @@ public class AnafOAuthService {
     form.add("redirect_uri", redirectUri);
     form.add("client_id", properties.getClientId());
     form.add("client_secret", properties.getClientSecret());
+    form.add("token_content_type", "jwt");
 
     AnafToken token = requestToken(form);
     saveToken(token);
