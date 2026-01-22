@@ -102,15 +102,24 @@ public class AnafOAuthService {
     form.add("code", "invalid");
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-    try {
-      ResponseEntity<String> response = restTemplate.postForEntity(
-          properties.getOauth().getTokenUrl(),
-          new HttpEntity<>(form, headers),
-          String.class);
-      return "OK " + response.getStatusCode().value() + " " + safeBody(response.getBody());
-    } catch (Exception ex) {
-      return "ERROR " + ex.getClass().getSimpleName() + ": " + ex.getMessage();
+    int attempts = Math.max(1, properties.getApi().getMaxRetries() + 1);
+    Duration delay = properties.getApi().getRetryDelay();
+    Exception last = null;
+    for (int i = 1; i <= attempts; i++) {
+      try {
+        ResponseEntity<String> response = restTemplate.postForEntity(
+            properties.getOauth().getTokenUrl(),
+            new HttpEntity<>(form, headers),
+            String.class);
+        return "OK " + response.getStatusCode().value() + " " + safeBody(response.getBody());
+      } catch (Exception ex) {
+        last = ex;
+        if (i < attempts) {
+          sleepQuietly(delay);
+        }
+      }
     }
+    return "ERROR " + last.getClass().getSimpleName() + ": " + last.getMessage();
   }
 
   private String safeBody(String body) {
@@ -122,6 +131,17 @@ public class AnafOAuthService {
       return trimmed.substring(0, 200) + "...";
     }
     return trimmed;
+  }
+
+  private void sleepQuietly(Duration delay) {
+    if (delay == null || delay.isZero() || delay.isNegative()) {
+      return;
+    }
+    try {
+      Thread.sleep(delay.toMillis());
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   private AnafToken refreshToken(AnafToken existing) {

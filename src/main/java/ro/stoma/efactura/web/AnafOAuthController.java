@@ -39,7 +39,11 @@ public class AnafOAuthController {
   }
 
   @GetMapping(value = "/ping-anaf-token", produces = MediaType.TEXT_PLAIN_VALUE)
-  public String pingAnafToken() {
-    return oauthService.pingTokenEndpoint();
+  public org.springframework.http.ResponseEntity<String> pingAnafToken() {
+    String result = oauthService.pingTokenEndpoint();
+    if (result.startsWith("OK ")) {
+      return org.springframework.http.ResponseEntity.ok(result);
+    }
+    return org.springframework.http.ResponseEntity.status(502).body(result);
   }
 }
