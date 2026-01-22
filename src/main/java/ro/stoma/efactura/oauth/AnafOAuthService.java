@@ -2,12 +2,15 @@ package ro.stoma.efactura.oauth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicReference;
 
 import ro.stoma.efactura.config.EfacturaProperties;
@@ -44,6 +47,7 @@ public class AnafOAuthService {
         .setReadTimeout(properties.getApi().getTimeout())
         .build();
     loadTokenFromFile();
+    logNetworkSettings();
   }
 
   public String buildLoginUrl() {
@@ -100,6 +104,17 @@ public class AnafOAuthService {
     }
   }
 
+  public String resolveAnafHost() {
+    try {
+      InetAddress[] addresses = InetAddress.getAllByName("logincert.anaf.ro");
+      return "OK " + java.util.Arrays.stream(addresses)
+          .map(addr -> addr.getHostAddress())
+          .collect(Collectors.joining(", "));
+    } catch (UnknownHostException ex) {
+      return "ERROR UnknownHostException: " + ex.getMessage();
+    }
+  }
+
   public String pingTokenEndpoint() {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "authorization_code");
@@ -146,6 +161,13 @@ public class AnafOAuthService {
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
     }
+  }
+
+  private void logNetworkSettings() {
+    String preferV4 = System.getProperty("java.net.preferIPv4Stack");
+    String preferV6 = System.getProperty("java.net.preferIPv6Addresses");
+    log.info("Network prefs preferIPv4Stack={} preferIPv6Addresses={}", preferV4, preferV6);
+    log.info("ANAF resolve {}", resolveAnafHost());
   }
 
   private AnafToken refreshToken(AnafToken existing) {

@@ -46,4 +46,9 @@ public class AnafOAuthController {
     }
     return org.springframework.http.ResponseEntity.status(502).body(result);
   }
+
+  @GetMapping(value = "/resolve-anaf", produces = MediaType.TEXT_PLAIN_VALUE)
+  public String resolveAnaf() {
+    return oauthService.resolveAnafHost();
+  }
 }
