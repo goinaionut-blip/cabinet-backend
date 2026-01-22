@@ -49,4 +49,9 @@ public class EfacturaController {
     byte[] payload = efacturaService.download(id);
     return ResponseEntity.ok(payload);
   }
+
+  @GetMapping("/cif")
+  public ResponseEntity<String> cif() {
+    return ResponseEntity.ok(efacturaService.getCif());
+  }
 }

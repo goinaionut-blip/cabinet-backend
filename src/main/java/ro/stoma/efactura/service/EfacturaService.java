@@ -52,6 +52,10 @@ public class EfacturaService {
     return client.download(id, accessToken);
   }
 
+  public String getCif() {
+    return properties.getCif();
+  }
+
   private String extractIndexIncarcare(String response) {
     if (response == null || response.isBlank()) {
       throw new IllegalStateException("ANAF upload response was empty.");
