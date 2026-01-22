@@ -74,9 +74,12 @@ public class AnafOAuthService {
   public String getValidAccessToken() {
     AnafToken token = tokenRef.get();
     if (token == null) {
+      log.warn("ANAF token missing; authentication required");
       throw new IllegalStateException("ANAF token missing. Authenticate first.");
     }
+    log.info("ANAF token expiresAt={}", token.getExpiresAt());
     if (token.isExpired(Instant.now())) {
+      log.info("ANAF token expired; refreshing");
       token = refreshToken(token);
       saveToken(token);
     }
@@ -178,6 +181,7 @@ public class AnafOAuthService {
     token.setRefreshToken(Objects.toString(refreshToken, null));
     long seconds = Long.parseLong(Objects.toString(expiresIn, "0"));
     token.setExpiresAt(Instant.now().plusSeconds(seconds));
+    log.info("ANAF token received expiresInSeconds={}", seconds);
     return token;
   }
 

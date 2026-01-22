@@ -5,20 +5,29 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 
 import ro.stoma.efactura.client.AnafEfacturaClient;
+import ro.stoma.efactura.config.EfacturaProperties;
 import ro.stoma.efactura.oauth.AnafOAuthService;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class EfacturaService {
+  private static final Logger log = LoggerFactory.getLogger(EfacturaService.class);
   private final AnafEfacturaClient client;
   private final AnafOAuthService oauthService;
   private final ObjectMapper objectMapper;
+  private final EfacturaProperties properties;
 
-  public EfacturaService(AnafEfacturaClient client, AnafOAuthService oauthService, ObjectMapper objectMapper) {
+  public EfacturaService(AnafEfacturaClient client,
+                         AnafOAuthService oauthService,
+                         ObjectMapper objectMapper,
+                         EfacturaProperties properties) {
     this.client = client;
     this.oauthService = oauthService;
     this.objectMapper = objectMapper;
+    this.properties = properties;
   }
 
   public String uploadInvoice(byte[] xml) {
@@ -33,6 +42,7 @@ public class EfacturaService {
   }
 
   public String listMessages(Integer days) {
+    log.info("ANAF env={} cif={}", properties.getEnvironment(), properties.getCif());
     String accessToken = oauthService.getValidAccessToken();
     return client.listMessages(accessToken, days);
   }

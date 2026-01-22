@@ -108,6 +108,7 @@ public class AnafEfacturaClient {
       if (status.is2xxSuccessful()) {
         return response;
       }
+      log.warn("ANAF {} failed status={} attempt={}", operation, status.value(), i + 1);
       if (!shouldRetry(status) || i == attempts - 1) {
         throw new AnafApiException(operation, status.value(), bodyAsString(response));
       }
