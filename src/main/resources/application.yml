@@ -45,7 +45,7 @@ app:
 
 efactura:
   enabled: true
-  environment: test   # test | prod
+  environment: prod   # test | prod
   cif: "27316839"
   client-id: ${ANAF_CLIENT_ID}
   client-secret: ${ANAF_CLIENT_SECRET}
