@@ -27,4 +27,9 @@ public class AnafOAuthController {
     oauthService.exchangeCodeForToken(code);
     return "Autentificare reușită";
   }
+
+  @GetMapping(value = "/has-token", produces = MediaType.TEXT_PLAIN_VALUE)
+  public String hasToken() {
+    return Boolean.toString(oauthService.hasToken());
+  }
 }

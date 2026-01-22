@@ -82,6 +82,10 @@ public class AnafOAuthService {
     return token.getAccessToken();
   }
 
+  public boolean hasToken() {
+    return tokenRef.get() != null;
+  }
+
   private AnafToken refreshToken(AnafToken existing) {
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "refresh_token");
