@@ -94,6 +94,16 @@ public class AnafOAuthService {
     return tokenRef.get() != null;
   }
 
+  public String tokenInfo() {
+    AnafToken token = tokenRef.get();
+    if (token == null) {
+      return "NO_TOKEN";
+    }
+    return "access=" + token.maskedAccessToken()
+        + " refresh=" + token.maskedRefreshToken()
+        + " expiresAt=" + token.getExpiresAt();
+  }
+
   public String pingAuthorizeEndpoint() {
     try {
       ResponseEntity<String> response = restTemplate.getForEntity(

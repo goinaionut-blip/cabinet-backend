@@ -38,4 +38,26 @@ public class AnafToken {
     }
     return expiresAt.isBefore(now.plus(60, ChronoUnit.SECONDS));
   }
+
+  public String maskedAccessToken() {
+    if (accessToken == null || accessToken.isBlank()) {
+      return "";
+    }
+    int length = accessToken.length();
+    if (length <= 12) {
+      return accessToken;
+    }
+    return accessToken.substring(0, 6) + "..." + accessToken.substring(length - 6);
+  }
+
+  public String maskedRefreshToken() {
+    if (refreshToken == null || refreshToken.isBlank()) {
+      return "";
+    }
+    int length = refreshToken.length();
+    if (length <= 12) {
+      return refreshToken;
+    }
+    return refreshToken.substring(0, 6) + "..." + refreshToken.substring(length - 6);
+  }
 }

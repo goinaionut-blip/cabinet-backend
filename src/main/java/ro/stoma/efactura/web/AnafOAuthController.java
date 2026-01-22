@@ -51,4 +51,9 @@ public class AnafOAuthController {
   public String resolveAnaf() {
     return oauthService.resolveAnafHost();
   }
+
+  @GetMapping(value = "/token-info", produces = MediaType.TEXT_PLAIN_VALUE)
+  public String tokenInfo() {
+    return oauthService.tokenInfo();
+  }
 }
