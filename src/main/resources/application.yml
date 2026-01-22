@@ -46,7 +46,6 @@ app:
 efactura:
   enabled: true
   environment: prod   # test | prod
-  cif: "27316839"
   client-id: ${ANAF_CLIENT_ID}
   client-secret: ${ANAF_CLIENT_SECRET}
   redirect-uri:

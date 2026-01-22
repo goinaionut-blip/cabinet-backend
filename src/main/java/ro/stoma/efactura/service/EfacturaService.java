@@ -30,30 +30,40 @@ public class EfacturaService {
     this.properties = properties;
   }
 
-  public String uploadInvoice(byte[] xml) {
-    String accessToken = oauthService.getValidAccessToken();
-    String response = client.uploadInvoice(xml, accessToken);
+  public String uploadInvoice(byte[] xml, String cif) {
+    String resolvedCif = resolveCif(cif);
+    String accessToken = oauthService.getValidAccessToken(resolvedCif);
+    String response = client.uploadInvoice(xml, accessToken, resolvedCif);
     return extractIndexIncarcare(response);
   }
 
-  public String getStatus(String indexIncarcare) {
-    String accessToken = oauthService.getValidAccessToken();
+  public String getStatus(String indexIncarcare, String cif) {
+    String accessToken = oauthService.getValidAccessToken(resolveCif(cif));
     return client.getStatus(indexIncarcare, accessToken);
   }
 
-  public String listMessages(Integer days) {
-    log.info("ANAF env={} cif={}", properties.getEnvironment(), properties.getCif());
-    String accessToken = oauthService.getValidAccessToken();
-    return client.listMessages(accessToken, days);
+  public String listMessages(Integer days, String cif) {
+    String resolvedCif = resolveCif(cif);
+    log.info("ANAF env={} cif={}", properties.getEnvironment(), resolvedCif);
+    String accessToken = oauthService.getValidAccessToken(resolvedCif);
+    return client.listMessages(accessToken, days, resolvedCif);
   }
 
-  public byte[] download(String id) {
-    String accessToken = oauthService.getValidAccessToken();
+  public byte[] download(String id, String cif) {
+    String accessToken = oauthService.getValidAccessToken(resolveCif(cif));
     return client.download(id, accessToken);
   }
 
-  public String getCif() {
-    return properties.getCif();
+  private String resolveCif(String cif) {
+    if (cif != null && !cif.isBlank()) {
+      return cif.trim();
+    }
+    String fallback = properties.getCif();
+    if (fallback == null || fallback.isBlank()) {
+      throw new IllegalArgumentException(
+          "CIF lipseste. Trimite headerul X-EFACTURA-CIF sau parametrul 'cif'.");
+    }
+    return fallback;
   }
 
   private String extractIndexIncarcare(String response) {

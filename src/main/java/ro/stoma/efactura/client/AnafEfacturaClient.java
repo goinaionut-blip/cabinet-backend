@@ -41,10 +41,10 @@ public class AnafEfacturaClient {
     });
   }
 
-  public String uploadInvoice(byte[] xml, String accessToken) {
+  public String uploadInvoice(byte[] xml, String accessToken, String cif) {
     Assert.notNull(xml, "xml is required");
     ResponseEntity<byte[]> response = executeWithRetry(() -> {
-      String url = buildUrl(properties.getApi().getUploadPath(), Map.of("cif", properties.getCif()));
+      String url = buildUrl(properties.getApi().getUploadPath(), Map.of("cif", cif));
       log.info("ANAF upload URL={}", url);
       HttpHeaders headers = bearerHeaders(accessToken);
       // ANAF specific: upload expects UBL XML payload.
@@ -68,13 +68,13 @@ public class AnafEfacturaClient {
     return bodyAsString(response);
   }
 
-  public String listMessages(String accessToken, Integer days) {
+  public String listMessages(String accessToken, Integer days, String cif) {
     ResponseEntity<byte[]> response = executeWithRetry(() -> {
       int listDays = days == null ? properties.getApi().getListDays() : days;
       String url = UriComponentsBuilder.fromHttpUrl(properties.resolveApiBase())
           .path(properties.getApi().getListPath())
           // ANAF specific: listaMesaje supports cif; include it so we list invoices for this CIF.
-          .queryParam("cif", properties.getCif())
+          .queryParam("cif", cif)
           .queryParam("zile", listDays)
           .build()
           .toUriString();

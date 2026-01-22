@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @RestController
 @RequestMapping("/api/efactura/oauth")
@@ -18,19 +19,24 @@ public class AnafOAuthController {
   }
 
   @GetMapping(value = "/login-url", produces = MediaType.TEXT_PLAIN_VALUE)
-  public String loginUrl() {
-    return oauthService.buildLoginUrl();
+  public String loginUrl(@RequestHeader(value = "X-EFACTURA-CIF", required = false) String cif,
+                         @RequestParam(value = "cif", required = false) String cifParam) {
+    String resolved = cifParam == null || cifParam.isBlank() ? cif : cifParam;
+    return oauthService.buildLoginUrl(resolved);
   }
 
   @GetMapping(value = "/callback", produces = MediaType.TEXT_PLAIN_VALUE)
-  public String callback(@RequestParam("code") String code) {
-    oauthService.exchangeCodeForToken(code);
+  public String callback(@RequestParam("code") String code,
+                         @RequestParam(value = "state", required = false) String state) {
+    oauthService.exchangeCodeForToken(code, state);
     return "Autentificare reușită";
   }
 
   @GetMapping(value = "/has-token", produces = MediaType.TEXT_PLAIN_VALUE)
-  public String hasToken() {
-    return Boolean.toString(oauthService.hasToken());
+  public String hasToken(@RequestHeader(value = "X-EFACTURA-CIF", required = false) String cif,
+                         @RequestParam(value = "cif", required = false) String cifParam) {
+    String resolved = cifParam == null || cifParam.isBlank() ? cif : cifParam;
+    return Boolean.toString(oauthService.hasToken(resolved));
   }
 
   @GetMapping(value = "/ping-anaf", produces = MediaType.TEXT_PLAIN_VALUE)
@@ -53,7 +59,9 @@ public class AnafOAuthController {
   }
 
   @GetMapping(value = "/token-info", produces = MediaType.TEXT_PLAIN_VALUE)
-  public String tokenInfo() {
-    return oauthService.tokenInfo();
+  public String tokenInfo(@RequestHeader(value = "X-EFACTURA-CIF", required = false) String cif,
+                          @RequestParam(value = "cif", required = false) String cifParam) {
+    String resolved = cifParam == null || cifParam.isBlank() ? cif : cifParam;
+    return oauthService.tokenInfo(resolved);
   }
 }

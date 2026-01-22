@@ -9,9 +9,9 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.concurrent.atomic.AtomicReference;
 
 import ro.stoma.efactura.config.EfacturaProperties;
 
@@ -35,7 +35,7 @@ public class AnafOAuthService {
   private final EfacturaProperties properties;
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
-  private final AtomicReference<AnafToken> tokenRef = new AtomicReference<>();
+  private final Map<String, AnafToken> tokenByCif = new ConcurrentHashMap<>();
 
   public AnafOAuthService(EfacturaProperties properties,
                           RestTemplateBuilder restTemplateBuilder,
@@ -46,23 +46,26 @@ public class AnafOAuthService {
         .setConnectTimeout(properties.getApi().getTimeout())
         .setReadTimeout(properties.getApi().getTimeout())
         .build();
-    loadTokenFromFile();
+    loadTokenFromFile(properties.getCif());
     logNetworkSettings();
   }
 
-  public String buildLoginUrl() {
+  public String buildLoginUrl(String cif) {
     // ANAF specific: authorization endpoint and required query params.
     String redirectUri = resolveBackendRedirectUri();
-    return UriComponentsBuilder.fromHttpUrl(properties.getOauth().getAuthorizeUrl())
+    UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(properties.getOauth().getAuthorizeUrl())
         .queryParam("response_type", "code")
         .queryParam("client_id", properties.getClientId())
         .queryParam("redirect_uri", redirectUri)
-        .queryParam("token_content_type", "jwt")
-        .build()
-        .toUriString();
+        .queryParam("token_content_type", "jwt");
+    String resolvedCif = normalizeCif(cif);
+    if (resolvedCif != null && !resolvedCif.isBlank()) {
+      builder.queryParam("state", resolvedCif);
+    }
+    return builder.build().toUriString();
   }
 
-  public AnafToken exchangeCodeForToken(String code) {
+  public AnafToken exchangeCodeForToken(String code, String cif) {
     String redirectUri = resolveBackendRedirectUri();
     MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
     form.add("grant_type", "authorization_code");
@@ -73,12 +76,22 @@ public class AnafOAuthService {
     form.add("token_content_type", "jwt");
 
     AnafToken token = requestToken(form);
-    saveToken(token);
+    saveToken(token, cif);
     return token;
   }
 
-  public String getValidAccessToken() {
-    AnafToken token = tokenRef.get();
+  public String getValidAccessToken(String cif) {
+    String key = normalizeCif(cif);
+    if (key == null || key.isBlank()) {
+      key = "default";
+    }
+    AnafToken token = tokenByCif.get(key);
+    if (token == null) {
+      token = loadTokenFromFile(key);
+      if (token != null) {
+        tokenByCif.put(key, token);
+      }
+    }
     if (token == null) {
       log.warn("ANAF token missing; authentication required");
       throw new IllegalStateException("ANAF token missing. Authenticate first.");
@@ -87,17 +100,40 @@ public class AnafOAuthService {
     if (token.isExpired(Instant.now())) {
       log.info("ANAF token expired; refreshing");
       token = refreshToken(token);
-      saveToken(token);
+      saveToken(token, key);
     }
     return token.getAccessToken();
   }
 
-  public boolean hasToken() {
-    return tokenRef.get() != null;
+  public boolean hasToken(String cif) {
+    String key = normalizeCif(cif);
+    if (key == null || key.isBlank()) {
+      key = "default";
+    }
+    AnafToken token = tokenByCif.get(key);
+    if (token != null) {
+      return true;
+    }
+    token = loadTokenFromFile(key);
+    if (token != null) {
+      tokenByCif.put(key, token);
+      return true;
+    }
+    return false;
   }
 
-  public String tokenInfo() {
-    AnafToken token = tokenRef.get();
+  public String tokenInfo(String cif) {
+    String key = normalizeCif(cif);
+    if (key == null || key.isBlank()) {
+      key = "default";
+    }
+    AnafToken token = tokenByCif.get(key);
+    if (token == null) {
+      token = loadTokenFromFile(key);
+      if (token != null) {
+        tokenByCif.put(key, token);
+      }
+    }
     if (token == null) {
       return "NO_TOKEN";
     }
@@ -219,26 +255,30 @@ public class AnafOAuthService {
     return token;
   }
 
-  private void saveToken(AnafToken token) {
-    tokenRef.set(token);
-    persistTokenToFile(token);
+  private void saveToken(AnafToken token, String cif) {
+    String key = normalizeCif(cif);
+    if (key == null || key.isBlank()) {
+      key = "default";
+    }
+    tokenByCif.put(key, token);
+    persistTokenToFile(token, key);
   }
 
-  private void loadTokenFromFile() {
-    Path path = tokenFilePath();
+  private AnafToken loadTokenFromFile(String cif) {
+    Path path = tokenFilePath(cif);
     if (path == null || !Files.exists(path)) {
-      return;
+      return null;
     }
     try {
-      AnafToken token = objectMapper.readValue(path.toFile(), AnafToken.class);
-      tokenRef.set(token);
+      return objectMapper.readValue(path.toFile(), AnafToken.class);
     } catch (IOException ex) {
       log.warn("Failed to load ANAF token file.");
+      return null;
     }
   }
 
-  private void persistTokenToFile(AnafToken token) {
-    Path path = tokenFilePath();
+  private void persistTokenToFile(AnafToken token, String cif) {
+    Path path = tokenFilePath(cif);
     if (path == null) {
       return;
     }
@@ -249,12 +289,43 @@ public class AnafOAuthService {
     }
   }
 
-  private Path tokenFilePath() {
+  private Path tokenFilePath(String cif) {
     String tokenFile = properties.getOauth().getTokenFile();
     if (tokenFile == null || tokenFile.isBlank()) {
       return null;
     }
+    String resolvedCif = normalizeCif(cif);
+    if (resolvedCif != null && !resolvedCif.isBlank()) {
+      if (tokenFile.contains("{cif}")) {
+        tokenFile = tokenFile.replace("{cif}", resolvedCif);
+      } else {
+        int dot = tokenFile.lastIndexOf('.');
+        if (dot > 0) {
+          tokenFile = tokenFile.substring(0, dot) + "-" + resolvedCif + tokenFile.substring(dot);
+        } else {
+          tokenFile = tokenFile + "-" + resolvedCif;
+        }
+      }
+    }
     return Path.of(tokenFile);
+  }
+
+  private String normalizeCif(String value) {
+    if (value == null) {
+      return null;
+    }
+    String trimmed = value.trim().toUpperCase();
+    if (trimmed.startsWith("RO")) {
+      trimmed = trimmed.substring(2);
+    }
+    StringBuilder digits = new StringBuilder();
+    for (int i = 0; i < trimmed.length(); i++) {
+      char ch = trimmed.charAt(i);
+      if (Character.isDigit(ch)) {
+        digits.append(ch);
+      }
+    }
+    return digits.toString();
   }
 
   private String resolveBackendRedirectUri() {
