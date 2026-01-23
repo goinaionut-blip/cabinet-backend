@@ -45,7 +45,7 @@ app:
 
 efactura:
   enabled: true
-  environment: test   # test | prod
+  environment: prod   # test | prod
   client-id: ${ANAF_CLIENT_ID}
   client-secret: ${ANAF_CLIENT_SECRET}
   redirect-uri:
@@ -56,7 +56,7 @@ efactura:
     token-url: https://logincert.anaf.ro/anaf-oauth2/v1/token
   api:
     base-test: https://api.anaf.ro/test
-    base-prod: https://api.anaf.ro/test
+    base-prod: https://api.anaf.ro/prod
     list-days: 60
     upload-path: /FCTEL/rest/upload?standard=UBL&cif={cif}
     status-path: /FCTEL/rest/stareMesaj?id_incarcare={index}
