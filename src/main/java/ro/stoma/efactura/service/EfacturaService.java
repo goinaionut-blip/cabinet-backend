@@ -3,6 +3,8 @@ package ro.stoma.efactura.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ro.stoma.efactura.client.AnafEfacturaClient;
 import ro.stoma.efactura.config.EfacturaProperties;
@@ -15,6 +17,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class EfacturaService {
   private static final Logger log = LoggerFactory.getLogger(EfacturaService.class);
+  private static final Pattern INDEX_PATTERN =
+      Pattern.compile("(?:index_incarcare|indexIncarcare)\\s*[:=]\\s*\"?([\\w-]+)\"?",
+          Pattern.CASE_INSENSITIVE);
+  private static final Pattern INDEX_XML_PATTERN =
+      Pattern.compile("<(?:index_incarcare|indexIncarcare)>([^<]+)</", Pattern.CASE_INSENSITIVE);
   private final AnafEfacturaClient client;
   private final AnafOAuthService oauthService;
   private final ObjectMapper objectMapper;
@@ -79,9 +86,29 @@ public class EfacturaService {
       if (value != null && !value.isNull()) {
         return value.asText();
       }
+      JsonNode error = node.get("eroare");
+      if (error == null) {
+        error = node.get("error");
+      }
+      if (error == null) {
+        error = node.get("message");
+      }
+      if (error != null && !error.isNull()) {
+        throw new IllegalStateException("ANAF upload error: " + error.asText());
+      }
     } catch (IOException ex) {
       // If ANAF changes format, return raw response for troubleshooting.
     }
-    throw new IllegalStateException("ANAF upload response missing index_incarcare.");
+    String trimmed = response.trim();
+    Matcher jsonMatcher = INDEX_PATTERN.matcher(trimmed);
+    if (jsonMatcher.find()) {
+      return jsonMatcher.group(1);
+    }
+    Matcher xmlMatcher = INDEX_XML_PATTERN.matcher(trimmed);
+    if (xmlMatcher.find()) {
+      return xmlMatcher.group(1).trim();
+    }
+    String snippet = trimmed.length() > 500 ? trimmed.substring(0, 500) + "..." : trimmed;
+    throw new IllegalStateException("ANAF upload response missing index_incarcare. Response: " + snippet);
   }
 }
