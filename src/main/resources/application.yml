@@ -43,6 +43,17 @@ app:
       - username: asistenta
         password: ${PAROLA_ASISTENTA}
 
+licensing:
+  admin-token: ${LICENSING_ADMIN_TOKEN:}
+  key-hash-secret: ${LICENSING_KEY_HASH_SECRET:}
+  jwt-issuer: ${LICENSING_JWT_ISSUER:licensing-service}
+  jwt-private-key-pem: ${LICENSING_JWT_PRIVATE_KEY_PEM:}
+  jwt-public-key-pem: ${LICENSING_JWT_PUBLIC_KEY_PEM:}
+  entitlement-ttl-hours: ${LICENSING_JWT_TTL_HOURS:24}
+  rate-limit:
+    window-seconds: ${LICENSING_RATE_WINDOW_SECONDS:60}
+    max-requests: ${LICENSING_RATE_MAX_REQUESTS:60}
+
 efactura:
   enabled: true
   environment: prod   # test | prod

@@ -75,6 +75,8 @@ public class SecurityConfig {
             .requestMatchers("/upload", "/upload/**").permitAll()
             .requestMatchers("/done", "/done/**").permitAll()
             .requestMatchers("/api/sign/**").permitAll()
+            .requestMatchers("/api/licensing/v1/installs/touch").permitAll()
+            .requestMatchers("/api/licensing/v1/licenses/activate").permitAll()
             .anyRequest().authenticated())
         .authenticationProvider(authProvider)
         .addFilterBefore(apiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
