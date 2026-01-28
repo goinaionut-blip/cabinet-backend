@@ -107,6 +107,7 @@ public class LicensingAdminService {
       item.setMaxSeats(license.getMaxSeats());
       item.setValidUntil(license.getValidUntil());
       item.setCreatedAt(license.getCreatedAt());
+      item.setNotes(license.getNotes());
       int activeCount = activationRepository.countByLicenseIdAndRevokedAtIsNull(license.getId());
       item.setActiveActivations(activeCount);
       response.add(item);

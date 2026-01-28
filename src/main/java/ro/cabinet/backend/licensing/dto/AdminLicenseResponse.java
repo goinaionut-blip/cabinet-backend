@@ -12,6 +12,7 @@ public class AdminLicenseResponse {
   private Instant validUntil;
   private Instant createdAt;
   private int activeActivations;
+  private String notes;
 
   public UUID getLicenseId() {
     return licenseId;
@@ -75,5 +76,13 @@ public class AdminLicenseResponse {
 
   public void setActiveActivations(int activeActivations) {
     this.activeActivations = activeActivations;
+  }
+
+  public String getNotes() {
+    return notes;
+  }
+
+  public void setNotes(String notes) {
+    this.notes = notes;
   }
 }
