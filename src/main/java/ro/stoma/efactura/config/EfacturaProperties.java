@@ -147,9 +147,13 @@ public class EfacturaProperties {
     private String listPath;
     private String downloadPath;
     private int listDays = 60;
-    private Duration timeout = Duration.ofSeconds(90);
+    private Duration connectTimeout = Duration.ofSeconds(10);
+    private Duration readTimeout = Duration.ofSeconds(90);
     private int maxRetries = 2;
     private Duration retryDelay = Duration.ofSeconds(2);
+    private int maxTotalConnections = 50;
+    private int maxPerRouteConnections = 20;
+    private Duration keepAlive = Duration.ofSeconds(30);
 
     public String getBaseTest() {
       return baseTest;
@@ -207,12 +211,20 @@ public class EfacturaProperties {
       this.listDays = listDays;
     }
 
-    public Duration getTimeout() {
-      return timeout;
+    public Duration getConnectTimeout() {
+      return connectTimeout;
     }
 
-    public void setTimeout(Duration timeout) {
-      this.timeout = timeout;
+    public void setConnectTimeout(Duration connectTimeout) {
+      this.connectTimeout = connectTimeout;
+    }
+
+    public Duration getReadTimeout() {
+      return readTimeout;
+    }
+
+    public void setReadTimeout(Duration readTimeout) {
+      this.readTimeout = readTimeout;
     }
 
     public int getMaxRetries() {
@@ -229,6 +241,30 @@ public class EfacturaProperties {
 
     public void setRetryDelay(Duration retryDelay) {
       this.retryDelay = retryDelay;
+    }
+
+    public int getMaxTotalConnections() {
+      return maxTotalConnections;
+    }
+
+    public void setMaxTotalConnections(int maxTotalConnections) {
+      this.maxTotalConnections = maxTotalConnections;
+    }
+
+    public int getMaxPerRouteConnections() {
+      return maxPerRouteConnections;
+    }
+
+    public void setMaxPerRouteConnections(int maxPerRouteConnections) {
+      this.maxPerRouteConnections = maxPerRouteConnections;
+    }
+
+    public Duration getKeepAlive() {
+      return keepAlive;
+    }
+
+    public void setKeepAlive(Duration keepAlive) {
+      this.keepAlive = keepAlive;
     }
   }
 }

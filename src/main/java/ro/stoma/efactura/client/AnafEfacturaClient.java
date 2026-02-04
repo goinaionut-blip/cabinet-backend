@@ -15,6 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -27,11 +29,12 @@ public class AnafEfacturaClient {
   private final EfacturaProperties properties;
   private final RestTemplate restTemplate;
 
-  public AnafEfacturaClient(EfacturaProperties properties, RestTemplateBuilder builder) {
+  public AnafEfacturaClient(EfacturaProperties properties,
+                            RestTemplateBuilder builder,
+                            @Qualifier("efacturaClientHttpRequestFactory") ClientHttpRequestFactory requestFactory) {
     this.properties = properties;
     this.restTemplate = builder
-        .setConnectTimeout(properties.getApi().getTimeout())
-        .setReadTimeout(properties.getApi().getTimeout())
+        .requestFactory(() -> requestFactory)
         .build();
     this.restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
       @Override

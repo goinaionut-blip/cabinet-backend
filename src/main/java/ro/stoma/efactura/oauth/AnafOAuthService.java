@@ -6,27 +6,40 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Objects;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import ro.stoma.efactura.config.EfacturaProperties;
+import ro.stoma.efactura.oauth.lock.AnafTokenRefreshLockService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import io.github.resilience4j.core.IntervalFunction;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryConfig;
 
 @Service
 public class AnafOAuthService {
@@ -36,16 +49,22 @@ public class AnafOAuthService {
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
   private final Map<String, AnafToken> tokenByCif = new ConcurrentHashMap<>();
+  private final AnafTokenRefreshLockService refreshLockService;
+  private final Retry tokenRetry;
+  private static final Duration REFRESH_LEAD_TIME = Duration.ofMinutes(5);
 
   public AnafOAuthService(EfacturaProperties properties,
                           RestTemplateBuilder restTemplateBuilder,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          @Qualifier("efacturaClientHttpRequestFactory") ClientHttpRequestFactory requestFactory,
+                          AnafTokenRefreshLockService refreshLockService) {
     this.properties = properties;
     this.objectMapper = objectMapper;
+    this.refreshLockService = refreshLockService;
     this.restTemplate = restTemplateBuilder
-        .setConnectTimeout(properties.getApi().getTimeout())
-        .setReadTimeout(properties.getApi().getTimeout())
+        .requestFactory(() -> requestFactory)
         .build();
+    this.tokenRetry = buildTokenRetry(properties);
     loadTokenFromFile(properties.getCif());
     logNetworkSettings();
   }
@@ -99,7 +118,7 @@ public class AnafOAuthService {
     log.info("ANAF token expiresAt={}", token.getExpiresAt());
     if (token.isExpired(Instant.now())) {
       log.info("ANAF token expired; refreshing");
-      token = refreshToken(token);
+      token = refreshTokenSingleFlight(token, key);
       saveToken(token, key);
     }
     return token.getAccessToken();
@@ -189,6 +208,18 @@ public class AnafOAuthService {
     return "ERROR " + last.getClass().getSimpleName() + ": " + last.getMessage();
   }
 
+  @Scheduled(fixedDelay = 60000)
+  public void scheduledTokenRefresh() {
+    Set<String> keys = new HashSet<>(tokenByCif.keySet());
+    String defaultCif = normalizeCif(properties.getCif());
+    if (defaultCif != null && !defaultCif.isBlank()) {
+      keys.add(defaultCif);
+    }
+    for (String key : keys) {
+      maybeRefreshSoonExpiringToken(key);
+    }
+  }
+
   private String safeBody(String body) {
     if (body == null) {
       return "";
@@ -230,10 +261,20 @@ public class AnafOAuthService {
   private AnafToken requestToken(MultiValueMap<String, String> form) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-    ResponseEntity<Map> response = restTemplate.postForEntity(
-        properties.getOauth().getTokenUrl(),
-        new HttpEntity<>(form, headers),
-        Map.class);
+    AtomicInteger attempt = new AtomicInteger(0);
+    ResponseEntity<Map> response = Retry.decorateSupplier(tokenRetry, () -> {
+      int attemptNumber = attempt.incrementAndGet();
+      long startNs = System.nanoTime();
+      try {
+        return restTemplate.postForEntity(
+            properties.getOauth().getTokenUrl(),
+            new HttpEntity<>(form, headers),
+            Map.class);
+      } catch (Exception ex) {
+        logTokenAttemptFailure(attemptNumber, startNs, ex);
+        throw ex;
+      }
+    }).get();
 
     Map body = response.getBody();
     if (body == null) {
@@ -255,6 +296,54 @@ public class AnafOAuthService {
     return token;
   }
 
+  private Retry buildTokenRetry(EfacturaProperties properties) {
+    long initialDelayMs = Math.max(100L, properties.getApi().getRetryDelay().toMillis());
+    IntervalFunction intervalFunction = IntervalFunction.ofExponentialRandomBackoff(initialDelayMs, 2.0d, 0.5d);
+    RetryConfig config = RetryConfig.custom()
+        .maxAttempts(4)
+        .intervalFunction(intervalFunction)
+        .retryOnException(this::isRetryableTokenException)
+        .build();
+    return Retry.of("anafToken", config);
+  }
+
+  private boolean isRetryableTokenException(Throwable throwable) {
+    if (!(throwable instanceof ResourceAccessException)) {
+      return false;
+    }
+    Throwable cause = rootCause(throwable);
+    return cause instanceof java.net.SocketTimeoutException
+        || cause instanceof java.net.ConnectException
+        || cause instanceof java.net.UnknownHostException;
+  }
+
+  private void logTokenAttemptFailure(int attemptNumber, long startNs, Exception ex) {
+    long totalMs = Duration.ofNanos(System.nanoTime() - startNs).toMillis();
+    long connectMs = isConnectFailure(ex) ? totalMs : -1L;
+    String root = rootCause(ex).getClass().getSimpleName();
+    String extra = "";
+    if (ex instanceof HttpStatusCodeException status) {
+      extra = " status=" + status.getStatusCode().value();
+    }
+    log.warn("ANAF token attempt={} failed totalMs={} connectMs={} rootCause={}{}",
+        attemptNumber, totalMs, connectMs, root, extra);
+  }
+
+  private boolean isConnectFailure(Throwable throwable) {
+    Throwable cause = rootCause(throwable);
+    return cause instanceof java.net.SocketTimeoutException
+        || cause instanceof java.net.ConnectException
+        || cause instanceof java.net.UnknownHostException;
+  }
+
+  private Throwable rootCause(Throwable throwable) {
+    Throwable current = throwable;
+    while (current.getCause() != null && current.getCause() != current) {
+      current = current.getCause();
+    }
+    return current;
+  }
+
   private void saveToken(AnafToken token, String cif) {
     String key = normalizeCif(cif);
     if (key == null || key.isBlank()) {
@@ -262,6 +351,46 @@ public class AnafOAuthService {
     }
     tokenByCif.put(key, token);
     persistTokenToFile(token, key);
+  }
+
+  private void maybeRefreshSoonExpiringToken(String key) {
+    AnafToken token = tokenByCif.get(key);
+    if (token == null) {
+      token = loadTokenFromFile(key);
+      if (token != null) {
+        tokenByCif.put(key, token);
+      }
+    }
+    if (token == null) {
+      return;
+    }
+    if (token.getExpiresAt() == null) {
+      return;
+    }
+    Instant now = Instant.now();
+    if (token.getExpiresAt().isBefore(now.plus(REFRESH_LEAD_TIME))) {
+      log.info("ANAF token near expiry; scheduled refresh for cif={}", key);
+      AnafToken refreshed = refreshTokenSingleFlight(token, key);
+      saveToken(refreshed, key);
+    }
+  }
+
+  private AnafToken refreshTokenSingleFlight(AnafToken existing, String key) {
+    if (!refreshLockService.tryAcquire(key)) {
+      log.info("ANAF refresh already in progress for cif={}", key);
+      AnafToken updated = loadTokenFromFile(key);
+      if (updated != null && !updated.isExpired(Instant.now())) {
+        tokenByCif.put(key, updated);
+        return updated;
+      }
+      return existing;
+    }
+    try {
+      AnafToken refreshed = refreshToken(existing);
+      return refreshed;
+    } finally {
+      refreshLockService.release(key);
+    }
   }
 
   private AnafToken loadTokenFromFile(String cif) {
