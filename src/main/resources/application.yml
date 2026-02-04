@@ -69,6 +69,7 @@ efactura:
     base-test: https://api.anaf.ro/test
     base-prod: https://api.anaf.ro/prod
     list-days: 60
+    timeout: ${EFACTURA_API_TIMEOUT:90s}
     upload-path: /FCTEL/rest/upload?standard=UBL&cif={cif}
     status-path: /FCTEL/rest/stareMesaj?id_incarcare={index}
     list-path: /FCTEL/rest/listaMesajeFactura

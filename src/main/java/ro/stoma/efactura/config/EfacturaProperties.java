@@ -147,7 +147,7 @@ public class EfacturaProperties {
     private String listPath;
     private String downloadPath;
     private int listDays = 60;
-    private Duration timeout = Duration.ofSeconds(30);
+    private Duration timeout = Duration.ofSeconds(90);
     private int maxRetries = 2;
     private Duration retryDelay = Duration.ofSeconds(2);
 
