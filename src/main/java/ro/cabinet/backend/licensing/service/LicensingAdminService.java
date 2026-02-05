@@ -3,7 +3,9 @@ package ro.cabinet.backend.licensing.service;
 import ro.cabinet.backend.licensing.dto.AdminActivationResponse;
 import ro.cabinet.backend.licensing.dto.AdminCreateLicenseRequest;
 import ro.cabinet.backend.licensing.dto.AdminCreateLicenseResponse;
+import ro.cabinet.backend.licensing.dto.AdminCreateProductRequest;
 import ro.cabinet.backend.licensing.dto.AdminLicenseResponse;
+import ro.cabinet.backend.licensing.dto.AdminProductResponse;
 import ro.cabinet.backend.licensing.entity.LicenseStatus;
 import ro.cabinet.backend.licensing.entity.LicensingActivation;
 import ro.cabinet.backend.licensing.entity.LicensingLicense;
@@ -22,12 +24,15 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class LicensingAdminService {
   private static final int MAX_GENERATE_ATTEMPTS = 5;
+  private static final int DEFAULT_TRIAL_DAYS = 14;
+  private static final int DEFAULT_OFFLINE_GRACE_HOURS = 72;
 
   private final LicensingProductRepository productRepository;
   private final LicensingLicenseRepository licenseRepository;
@@ -142,10 +147,52 @@ public class LicensingAdminService {
     return response;
   }
 
+  @Transactional(readOnly = true)
+  public List<AdminProductResponse> listProducts() {
+    List<LicensingProduct> products = productRepository.findAll(Sort.by("productCode"));
+    List<AdminProductResponse> response = new ArrayList<>();
+    for (LicensingProduct product : products) {
+      response.add(toProductResponse(product));
+    }
+    return response;
+  }
+
+  @Transactional
+  public AdminProductResponse createProduct(AdminCreateProductRequest request) {
+    String productCode = normalizeProductCode(request.getProductCode());
+    LicensingProduct existing = productRepository.findById(productCode).orElse(null);
+    if (existing != null) {
+      return toProductResponse(existing);
+    }
+
+    LicensingProduct product = new LicensingProduct();
+    product.setProductCode(productCode);
+    product.setName(request.getName().trim());
+    product.setTrialDays(defaultIfNull(request.getTrialDays(), DEFAULT_TRIAL_DAYS));
+    product.setOfflineGraceHours(defaultIfNull(request.getOfflineGraceHours(), DEFAULT_OFFLINE_GRACE_HOURS));
+    product.setCreatedAt(Instant.now(clock));
+    productRepository.save(product);
+    return toProductResponse(product);
+  }
+
   private String normalizeProductCode(String productCode) {
     if (productCode == null || productCode.isBlank()) {
       throw new LicensingBadRequestException("Product code is required.");
     }
     return productCode.trim().toUpperCase();
+  }
+
+  private int defaultIfNull(Integer value, int def) {
+    return value == null ? def : value;
+  }
+
+  private AdminProductResponse toProductResponse(LicensingProduct product) {
+    AdminProductResponse response = new AdminProductResponse();
+    response.setProductCode(product.getProductCode());
+    response.setName(product.getName());
+    response.setTrialDays(product.getTrialDays());
+    response.setOfflineGraceHours(product.getOfflineGraceHours());
+    response.setCreatedAt(product.getCreatedAt());
+    return response;
   }
 }

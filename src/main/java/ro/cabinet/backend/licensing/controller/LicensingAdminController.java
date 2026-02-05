@@ -3,7 +3,9 @@ package ro.cabinet.backend.licensing.controller;
 import ro.cabinet.backend.licensing.dto.AdminActivationResponse;
 import ro.cabinet.backend.licensing.dto.AdminCreateLicenseRequest;
 import ro.cabinet.backend.licensing.dto.AdminCreateLicenseResponse;
+import ro.cabinet.backend.licensing.dto.AdminCreateProductRequest;
 import ro.cabinet.backend.licensing.dto.AdminLicenseResponse;
+import ro.cabinet.backend.licensing.dto.AdminProductResponse;
 import ro.cabinet.backend.licensing.service.LicensingAdminGuard;
 import ro.cabinet.backend.licensing.service.LicensingAdminService;
 
@@ -62,5 +64,20 @@ public class LicensingAdminController {
       @RequestParam(value = "installId", required = false) UUID installId) {
     adminGuard.requireAuthorized(adminToken);
     return adminService.listActivations(productCode, installId);
+  }
+
+  @GetMapping("/products")
+  public List<AdminProductResponse> listProducts(
+      @RequestHeader(value = "X-Licensing-Admin-Token", required = false) String adminToken) {
+    adminGuard.requireAuthorized(adminToken);
+    return adminService.listProducts();
+  }
+
+  @PostMapping("/products")
+  public AdminProductResponse createProduct(
+      @RequestHeader(value = "X-Licensing-Admin-Token", required = false) String adminToken,
+      @Valid @RequestBody AdminCreateProductRequest request) {
+    adminGuard.requireAuthorized(adminToken);
+    return adminService.createProduct(request);
   }
 }
