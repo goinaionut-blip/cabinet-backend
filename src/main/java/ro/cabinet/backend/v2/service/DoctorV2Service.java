@@ -1,6 +1,7 @@
 package ro.cabinet.backend.v2.service;
 
 import ro.cabinet.backend.v2.entity.Doctor;
+import ro.cabinet.backend.v2.entity.ClinicUser;
 import ro.cabinet.backend.v2.entity.DbUser;
 import ro.cabinet.backend.v2.exception.V2NotFoundException;
 import ro.cabinet.backend.v2.exception.V2ValidationException;
@@ -39,14 +40,14 @@ public class DoctorV2Service {
 
   @Transactional(readOnly = true)
   public List<Doctor> list(UUID clinicId, UUID userId) {
-    clinicAccessService.requireClinicMembership(clinicId, userId);
+    requireClinicAccess(clinicId, userId);
     List<Doctor> doctors = doctorRepository.findByClinicIdAndActiveTrueOrderByDisplayNameAsc(clinicId);
     return enrichAssignedUsers(doctors);
   }
 
   @Transactional
   public Doctor create(UUID clinicId, UUID userId, String displayName, String externalCode, UUID assignedUserId) {
-    clinicAccessService.requireRole(clinicId, userId, OWNER_ADMIN_SUPERADMIN);
+    requireClinicRole(clinicId, userId, OWNER_ADMIN_SUPERADMIN);
     if (displayName == null || displayName.isBlank()) {
       throw new V2ValidationException("displayName is required");
     }
@@ -66,7 +67,7 @@ public class DoctorV2Service {
   @Transactional
   public Doctor update(UUID clinicId, UUID doctorId, UUID userId,
                        String displayName, String externalCode, UUID assignedUserId) {
-    clinicAccessService.requireRole(clinicId, userId, OWNER_ADMIN_SUPERADMIN);
+    requireClinicRole(clinicId, userId, OWNER_ADMIN_SUPERADMIN);
     Doctor doctor = doctorRepository.findByIdAndClinicId(doctorId, clinicId)
         .orElseThrow(() -> new V2NotFoundException("Doctor not found"));
 
@@ -83,11 +84,34 @@ public class DoctorV2Service {
 
   @Transactional
   public void softDelete(UUID clinicId, UUID doctorId, UUID userId) {
-    clinicAccessService.requireRole(clinicId, userId, OWNER_ADMIN_SUPERADMIN);
+    requireClinicRole(clinicId, userId, OWNER_ADMIN_SUPERADMIN);
     Doctor doctor = doctorRepository.findByIdAndClinicId(doctorId, clinicId)
         .orElseThrow(() -> new V2NotFoundException("Doctor not found"));
     doctor.setActive(false);
     doctorRepository.save(doctor);
+  }
+
+  private void requireClinicAccess(UUID clinicId, UUID userId) {
+    if (isSuperAdmin(userId)) {
+      return;
+    }
+    clinicAccessService.requireClinicMembership(clinicId, userId);
+  }
+
+  private void requireClinicRole(UUID clinicId, UUID userId, Set<String> allowedRoles) {
+    if (isSuperAdmin(userId)) {
+      return;
+    }
+    clinicAccessService.requireRole(clinicId, userId, allowedRoles);
+  }
+
+  private boolean isSuperAdmin(UUID userId) {
+    return clinicUserRepository.findAllByUserId(userId).stream()
+        .map(ClinicUser::getRole)
+        .filter(java.util.Objects::nonNull)
+        .map(String::trim)
+        .map(String::toUpperCase)
+        .anyMatch("SUPERADMIN"::equals);
   }
 
   private void validateAssignedUser(UUID clinicId, UUID assignedUserId) {
