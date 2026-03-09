@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "doctors")
@@ -25,6 +26,9 @@ public class Doctor {
   @Column(name = "external_code")
   private String externalCode;
 
+  @Column(name = "user_id")
+  private UUID userId;
+
   @Column(name = "is_active", nullable = false)
   private boolean active = true;
 
@@ -33,6 +37,12 @@ public class Doctor {
 
   @Column(name = "updated_at", nullable = false)
   private OffsetDateTime updatedAt;
+
+  @Transient
+  private String userEmail;
+
+  @Transient
+  private String userDisplayName;
 
   @PrePersist
   public void onCreate() {
@@ -80,6 +90,14 @@ public class Doctor {
     this.externalCode = externalCode;
   }
 
+  public UUID getUserId() {
+    return userId;
+  }
+
+  public void setUserId(UUID userId) {
+    this.userId = userId;
+  }
+
   public boolean isActive() {
     return active;
   }
@@ -102,5 +120,21 @@ public class Doctor {
 
   public void setUpdatedAt(OffsetDateTime updatedAt) {
     this.updatedAt = updatedAt;
+  }
+
+  public String getUserEmail() {
+    return userEmail;
+  }
+
+  public void setUserEmail(String userEmail) {
+    this.userEmail = userEmail;
+  }
+
+  public String getUserDisplayName() {
+    return userDisplayName;
+  }
+
+  public void setUserDisplayName(String userDisplayName) {
+    this.userDisplayName = userDisplayName;
   }
 }

@@ -8,6 +8,7 @@ import ro.cabinet.backend.v2.exception.V2ValidationException;
 import ro.cabinet.backend.v2.repo.ClinicUserRepository;
 import ro.cabinet.backend.v2.repo.DbUserRepository;
 
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -20,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserManagementV2Service {
   private static final Set<String> OWNER_OR_SUPERADMIN = Set.of("OWNER", "SUPERADMIN");
+  private static final String ROLE_OWNER = "OWNER";
+  private static final String ROLE_SUPERADMIN = "SUPERADMIN";
 
   private final DbUserRepository dbUserRepository;
   private final ClinicUserRepository clinicUserRepository;
@@ -74,12 +77,51 @@ public class UserManagementV2Service {
     dbUserRepository.deleteById(targetUserId);
   }
 
+  @Transactional
+  public void changePassword(UUID actorUserId, UUID targetUserId, String newPassword) {
+    if (targetUserId == null) {
+      throw new V2ValidationException("User is required");
+    }
+    if (newPassword == null || newPassword.isBlank()) {
+      throw new V2ValidationException("Password is required");
+    }
+    if (newPassword.length() < 8) {
+      throw new V2ValidationException("Password must have at least 8 characters");
+    }
+    DbUser target = dbUserRepository.findById(targetUserId)
+        .orElseThrow(() -> new V2NotFoundException("User not found"));
+    requireCanManageTarget(actorUserId, targetUserId);
+    target.setPasswordHash(passwordEncoder.encode(newPassword));
+    dbUserRepository.save(target);
+  }
+
   private void requireRole(UUID actorUserId, Set<String> allowedRoles) {
     boolean allowed = clinicUserRepository.findAllByUserId(actorUserId).stream()
         .map(ClinicUser::getRole)
         .map(this::normalizeRole)
         .anyMatch(allowedRoles::contains);
     if (!allowed) {
+      throw new AccessDeniedException("Forbidden");
+    }
+  }
+
+  private void requireCanManageTarget(UUID actorUserId, UUID targetUserId) {
+    Set<UUID> ownerClinicIds = new LinkedHashSet<>();
+    for (ClinicUser membership : clinicUserRepository.findAllByUserId(actorUserId)) {
+      String role = normalizeRole(membership.getRole());
+      if (ROLE_SUPERADMIN.equals(role)) {
+        return;
+      }
+      if (ROLE_OWNER.equals(role)) {
+        ownerClinicIds.add(membership.getClinicId());
+      }
+    }
+    if (ownerClinicIds.isEmpty()) {
+      throw new AccessDeniedException("Forbidden");
+    }
+    boolean hasSharedClinic = clinicUserRepository.findAllByUserId(targetUserId).stream()
+        .anyMatch(membership -> ownerClinicIds.contains(membership.getClinicId()));
+    if (!hasSharedClinic) {
       throw new AccessDeniedException("Forbidden");
     }
   }

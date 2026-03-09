@@ -38,7 +38,7 @@ public class DoctorV2Controller {
   @PostMapping
   public Doctor create(@PathVariable UUID clinicId, @Valid @RequestBody UpsertDoctorRequest request) {
     return doctorService.create(clinicId, currentUserService.requireCurrentUserId(),
-        request.displayName(), request.externalCode());
+        request.displayName(), request.externalCode(), request.userId());
   }
 
   @PutMapping("/{doctorId}")
@@ -46,7 +46,7 @@ public class DoctorV2Controller {
                        @PathVariable UUID doctorId,
                        @Valid @RequestBody UpsertDoctorRequest request) {
     return doctorService.update(clinicId, doctorId, currentUserService.requireCurrentUserId(),
-        request.displayName(), request.externalCode());
+        request.displayName(), request.externalCode(), request.userId());
   }
 
   @DeleteMapping("/{doctorId}")
@@ -55,6 +55,6 @@ public class DoctorV2Controller {
     return ResponseEntity.noContent().build();
   }
 
-  public record UpsertDoctorRequest(@NotBlank String displayName, String externalCode) {
+  public record UpsertDoctorRequest(@NotBlank String displayName, String externalCode, UUID userId) {
   }
 }

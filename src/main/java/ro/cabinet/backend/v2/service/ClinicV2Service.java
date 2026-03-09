@@ -12,6 +12,7 @@ import ro.cabinet.backend.v2.repo.DbUserRepository;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -35,6 +36,37 @@ public class ClinicV2Service {
 
   @Transactional
   public V2Dtos.ClinicResponse createClinic(UUID userId, String name, String slug) {
+    requireSuperAdmin(userId);
+    return createClinicAsSuperAdmin(userId, name, slug);
+  }
+
+  @Transactional
+  public V2Dtos.ClinicResponse updateClinic(UUID clinicId, UUID userId, String name, String slug) {
+    requireSuperAdmin(userId);
+    Clinic clinic = clinicRepository.findById(clinicId).orElseThrow(() -> new V2NotFoundException("Clinic not found"));
+    if (name == null || name.isBlank()) {
+      throw new V2ValidationException("Clinic name is required");
+    }
+    String normalizedSlug = normalizeSlug(slug);
+    if (normalizedSlug != null && clinicRepository.existsBySlugIgnoreCaseAndIdNot(normalizedSlug, clinicId)) {
+      throw new V2ValidationException("Slug already exists");
+    }
+    clinic.setName(name.trim());
+    clinic.setSlug(normalizedSlug);
+    Clinic saved = clinicRepository.save(clinic);
+    String role = resolveRoleForClinic(userId, saved.getId());
+    return toResponse(saved, role);
+  }
+
+  @Transactional
+  public void deleteClinic(UUID clinicId, UUID userId) {
+    requireSuperAdmin(userId);
+    Clinic clinic = clinicRepository.findById(clinicId).orElseThrow(() -> new V2NotFoundException("Clinic not found"));
+    clinicRepository.delete(clinic);
+  }
+
+  @Transactional
+  private V2Dtos.ClinicResponse createClinicAsSuperAdmin(UUID userId, String name, String slug) {
     DbUser user = dbUserRepository.findById(userId).orElseThrow(() -> new V2NotFoundException("User not found"));
     if (!user.isActive()) {
       throw new V2ValidationException("User inactive");
@@ -89,6 +121,34 @@ public class ClinicV2Service {
     }
     String trimmed = slug.trim();
     return trimmed.isBlank() ? null : trimmed;
+  }
+
+  private void requireSuperAdmin(UUID userId) {
+    boolean isSuperAdmin = clinicUserRepository.findAllByUserId(userId).stream()
+        .map(ClinicUser::getRole)
+        .map(this::normalizeRole)
+        .anyMatch("SUPERADMIN"::equals);
+    if (!isSuperAdmin) {
+      throw new org.springframework.security.access.AccessDeniedException("Forbidden");
+    }
+  }
+
+  private String resolveRoleForClinic(UUID userId, UUID clinicId) {
+    return clinicUserRepository.findByClinicIdAndUserId(clinicId, userId)
+        .map(ClinicUser::getRole)
+        .map(this::normalizeRole)
+        .orElse("SUPERADMIN");
+  }
+
+  private String normalizeRole(String value) {
+    if (value == null) {
+      return "";
+    }
+    String normalized = value.trim().toUpperCase(Locale.ROOT);
+    if ("STANDARD".equals(normalized)) {
+      return "MEMBER";
+    }
+    return normalized;
   }
 
   private V2Dtos.ClinicResponse toResponse(Clinic clinic, String role) {

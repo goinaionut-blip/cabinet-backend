@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ClinicRepository extends JpaRepository<Clinic, UUID> {
   boolean existsBySlugIgnoreCase(String slug);
+
+  boolean existsBySlugIgnoreCaseAndIdNot(String slug, UUID id);
 }

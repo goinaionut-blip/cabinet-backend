@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,9 +45,23 @@ public class UserV2Controller {
     return ResponseEntity.noContent().build();
   }
 
+  @PutMapping("/{userId}/password")
+  public ResponseEntity<Void> changePassword(@PathVariable @NotNull UUID userId,
+                                             @Valid @RequestBody ChangePasswordRequest request) {
+    userManagementV2Service.changePassword(
+        currentUserService.requireCurrentUserId(),
+        userId,
+        request.newPassword() == null || request.newPassword().isBlank() ? request.password() : request.newPassword()
+    );
+    return ResponseEntity.noContent().build();
+  }
+
   public record CreateUserRequest(@NotBlank String email,
                                   @NotBlank String password,
                                   String displayName,
                                   Boolean active) {
+  }
+
+  public record ChangePasswordRequest(String newPassword, String password) {
   }
 }
