@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
+  List<Appointment> findAllByOrderByStartTimeAsc();
+
   List<Appointment> findByDoctorIdAndStartTimeGreaterThanEqualAndEndTimeLessThanEqual(
       Long doctorId, LocalDateTime start, LocalDateTime end);
 
