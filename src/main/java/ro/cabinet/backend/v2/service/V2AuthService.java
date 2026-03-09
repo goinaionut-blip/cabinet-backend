@@ -14,6 +14,7 @@ import ro.cabinet.backend.v2.repo.DbUserRepository;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -69,27 +70,55 @@ public class V2AuthService {
         .orElseThrow(() -> new V2NotFoundException("User not found"));
 
     List<ClinicUser> memberships = clinicUserRepository.findAllByUserId(userId);
-    Set<UUID> clinicIds = memberships.stream().map(ClinicUser::getClinicId).collect(java.util.stream.Collectors.toSet());
+    boolean superAdmin = memberships.stream()
+        .map(ClinicUser::getRole)
+        .map(this::normalizeRole)
+        .anyMatch("SUPERADMIN"::equals);
     Map<UUID, Clinic> clinicsById = new HashMap<>();
-    if (!clinicIds.isEmpty()) {
+    if (superAdmin) {
+      for (Clinic clinic : clinicRepository.findAll()) {
+        clinicsById.put(clinic.getId(), clinic);
+      }
+    } else {
+      Set<UUID> clinicIds = memberships.stream().map(ClinicUser::getClinicId)
+          .collect(java.util.stream.Collectors.toSet());
       for (Clinic clinic : clinicRepository.findAllById(clinicIds)) {
         clinicsById.put(clinic.getId(), clinic);
       }
     }
 
-    List<V2Dtos.ClinicMembershipSummary> clinics = memberships.stream()
-        .map(membership -> {
-          Clinic clinic = clinicsById.get(membership.getClinicId());
-          if (clinic == null) {
-            return null;
-          }
-          return new V2Dtos.ClinicMembershipSummary(
-              clinic.getId(), clinic.getName(), clinic.getSlug(), membership.getRole());
-        })
-        .filter(java.util.Objects::nonNull)
-        .toList();
+    List<V2Dtos.ClinicMembershipSummary> clinics;
+    if (superAdmin) {
+      clinics = clinicsById.values().stream()
+          .map(clinic -> new V2Dtos.ClinicMembershipSummary(
+              clinic.getId(), clinic.getName(), clinic.getSlug(), "SUPERADMIN"))
+          .toList();
+    } else {
+      clinics = memberships.stream()
+          .map(membership -> {
+            Clinic clinic = clinicsById.get(membership.getClinicId());
+            if (clinic == null) {
+              return null;
+            }
+            return new V2Dtos.ClinicMembershipSummary(
+                clinic.getId(), clinic.getName(), clinic.getSlug(), membership.getRole());
+          })
+          .filter(java.util.Objects::nonNull)
+          .toList();
+    }
 
     V2Dtos.UserSummary userSummary = new V2Dtos.UserSummary(user.getId(), user.getEmail(), user.getDisplayName());
     return new V2Dtos.AuthMeResponse(userSummary, clinics);
+  }
+
+  private String normalizeRole(String value) {
+    if (value == null) {
+      return "";
+    }
+    String normalized = value.trim().toUpperCase(Locale.ROOT);
+    if ("STANDARD".equals(normalized)) {
+      return "MEMBER";
+    }
+    return normalized;
   }
 }

@@ -84,18 +84,17 @@ public class ClinicV2Service {
     clinic.setName(name.trim());
     clinic.setSlug(normalizedSlug);
     Clinic saved = clinicRepository.save(clinic);
-
-    ClinicUser membership = new ClinicUser();
-    membership.setClinicId(saved.getId());
-    membership.setUserId(userId);
-    membership.setRole("OWNER");
-    clinicUserRepository.save(membership);
-
-    return toResponse(saved, "OWNER");
+    return toResponse(saved, "SUPERADMIN");
   }
 
   @Transactional(readOnly = true)
   public List<V2Dtos.ClinicResponse> listClinics(UUID userId) {
+    if (isSuperAdmin(userId)) {
+      return clinicRepository.findAll().stream()
+          .map(clinic -> toResponse(clinic, "SUPERADMIN"))
+          .toList();
+    }
+
     List<ClinicUser> memberships = clinicUserRepository.findAllByUserId(userId);
     Set<UUID> clinicIds = memberships.stream().map(ClinicUser::getClinicId).collect(java.util.stream.Collectors.toSet());
     Map<UUID, Clinic> clinicsById = new HashMap<>();
@@ -124,13 +123,16 @@ public class ClinicV2Service {
   }
 
   private void requireSuperAdmin(UUID userId) {
-    boolean isSuperAdmin = clinicUserRepository.findAllByUserId(userId).stream()
+    if (!isSuperAdmin(userId)) {
+      throw new org.springframework.security.access.AccessDeniedException("Forbidden");
+    }
+  }
+
+  private boolean isSuperAdmin(UUID userId) {
+    return clinicUserRepository.findAllByUserId(userId).stream()
         .map(ClinicUser::getRole)
         .map(this::normalizeRole)
         .anyMatch("SUPERADMIN"::equals);
-    if (!isSuperAdmin) {
-      throw new org.springframework.security.access.AccessDeniedException("Forbidden");
-    }
   }
 
   private String resolveRoleForClinic(UUID userId, UUID clinicId) {
