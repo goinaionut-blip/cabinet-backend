@@ -22,4 +22,6 @@ public interface ClinicUserRepository extends JpaRepository<ClinicUser, ClinicUs
       order by cu.createdAt asc
       """)
   List<ClinicUser> findAllByUserId(@Param("userId") UUID userId);
+
+  List<ClinicUser> findAllByClinicIdOrderByCreatedAtAsc(UUID clinicId);
 }
