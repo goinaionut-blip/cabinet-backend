@@ -54,6 +54,20 @@ licensing:
     window-seconds: ${LICENSING_RATE_WINDOW_SECONDS:60}
     max-requests: ${LICENSING_RATE_MAX_REQUESTS:60}
 
+notifications:
+  waha:
+    enabled: ${WAHA_ENABLED:false}
+    base-url: ${WAHA_BASE_URL:}
+    api-key: ${WAHA_API_KEY:}
+    default-session: ${WAHA_SESSION:default}
+    timeout-seconds: ${WAHA_TIMEOUT_SECONDS:10}
+  sms:
+    messaggio:
+      enabled: ${MESSAGGIO_ENABLED:false}
+      base-url: ${MESSAGGIO_BASE_URL:https://msg.messaggio.com/api/v1}
+      login: ${MESSAGGIO_LOGIN:}
+      sender-id: ${MESSAGGIO_SENDER_ID:}
+
 efactura:
   enabled: true
   environment: prod   # test | prod
