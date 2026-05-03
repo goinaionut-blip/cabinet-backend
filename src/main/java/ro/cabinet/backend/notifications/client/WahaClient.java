@@ -114,15 +114,26 @@ public class WahaClient {
     try {
       ObjectNode payload = objectMapper.createObjectNode();
       payload.put("name", resolvedSession);
+      String payloadBody = objectMapper.writeValueAsString(payload);
 
-      HttpRequest createRequest = authorizedJsonRequest(sessionsCollectionUrl(), "POST",
-          objectMapper.writeValueAsString(payload));
+      HttpRequest startByNameRequest = authorizedJsonRequest(sessionsStartUrl(), "POST", payloadBody);
+      HttpResponse<String> startByNameResponse = httpClient.send(startByNameRequest, HttpResponse.BodyHandlers.ofString());
+      if (isSuccess(startByNameResponse.statusCode()) || startByNameResponse.statusCode() == 409) {
+        WahaSessionInfo status = getSessionStatus(resolvedSession);
+        return new WahaSessionInfo(resolvedSession, status.getStatus(),
+            isBlank(status.getMessage()) ? "WAHA session requested." : status.getMessage());
+      }
+      if (startByNameResponse.statusCode() != 404 && startByNameResponse.statusCode() != 405) {
+        return new WahaSessionInfo(resolvedSession, WahaSessionStatus.FAILED,
+            buildProviderError("WAHA session start", startByNameResponse.statusCode(), startByNameResponse.body()));
+      }
+
+      HttpRequest createRequest = authorizedJsonRequest(sessionsCollectionUrl(), "POST", payloadBody);
       HttpResponse<String> createResponse = httpClient.send(createRequest, HttpResponse.BodyHandlers.ofString());
       if (!isAcceptableCreateResponse(createResponse)) {
         return new WahaSessionInfo(resolvedSession, WahaSessionStatus.FAILED,
             buildProviderError("WAHA create session", createResponse.statusCode(), createResponse.body()));
       }
-
       HttpRequest startRequest = authorizedJsonRequest(sessionStartUrl(resolvedSession), "POST", "");
       HttpResponse<String> startResponse = httpClient.send(startRequest, HttpResponse.BodyHandlers.ofString());
       if (!isSuccess(startResponse.statusCode()) && startResponse.statusCode() != 409) {
@@ -269,6 +280,10 @@ public class WahaClient {
 
   private String sessionsCollectionUrl() {
     return normalizeBaseUrl() + "/api/sessions";
+  }
+
+  private String sessionsStartUrl() {
+    return normalizeBaseUrl() + "/api/sessions/start";
   }
 
   private String sessionStatusUrl(String sessionName) {
