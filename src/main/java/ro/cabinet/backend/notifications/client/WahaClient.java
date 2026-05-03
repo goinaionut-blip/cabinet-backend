@@ -118,7 +118,7 @@ public class WahaClient {
       HttpRequest createRequest = authorizedJsonRequest(sessionsCollectionUrl(), "POST",
           objectMapper.writeValueAsString(payload));
       HttpResponse<String> createResponse = httpClient.send(createRequest, HttpResponse.BodyHandlers.ofString());
-      if (!isSuccess(createResponse.statusCode()) && createResponse.statusCode() != 409) {
+      if (!isAcceptableCreateResponse(createResponse)) {
         return new WahaSessionInfo(resolvedSession, WahaSessionStatus.FAILED,
             buildProviderError("WAHA create session", createResponse.statusCode(), createResponse.body()));
       }
@@ -397,6 +397,25 @@ public class WahaClient {
 
   private static boolean isSuccess(int statusCode) {
     return statusCode >= 200 && statusCode < 300;
+  }
+
+  private boolean isAcceptableCreateResponse(HttpResponse<String> response) {
+    if (response == null) {
+      return false;
+    }
+    if (isSuccess(response.statusCode()) || response.statusCode() == 409) {
+      return true;
+    }
+    if (response.statusCode() == 422) {
+      String body = response.body();
+      if (!isBlank(body)) {
+        String normalized = body.trim().toLowerCase();
+        if (normalized.contains("already exists")) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private static String buildProviderError(String operation, int statusCode, String body) {
