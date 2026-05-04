@@ -32,6 +32,15 @@ public class ClinicNotificationSettings {
   @Column(name = "sms_fallback_enabled", nullable = false)
   private boolean smsFallbackEnabled;
 
+  @Column(name = "whatsapp_reply_processing_enabled", nullable = false)
+  private boolean whatsappReplyProcessingEnabled;
+
+  @Column(name = "reply_window_hours", nullable = false)
+  private int replyWindowHours;
+
+  @Column(name = "save_reply_preview", nullable = false)
+  private boolean saveReplyPreview;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "default_preference", nullable = false)
   private NotificationPreference defaultPreference;
@@ -97,6 +106,30 @@ public class ClinicNotificationSettings {
 
   public void setSmsFallbackEnabled(boolean smsFallbackEnabled) {
     this.smsFallbackEnabled = smsFallbackEnabled;
+  }
+
+  public boolean isWhatsappReplyProcessingEnabled() {
+    return whatsappReplyProcessingEnabled;
+  }
+
+  public void setWhatsappReplyProcessingEnabled(boolean whatsappReplyProcessingEnabled) {
+    this.whatsappReplyProcessingEnabled = whatsappReplyProcessingEnabled;
+  }
+
+  public int getReplyWindowHours() {
+    return replyWindowHours;
+  }
+
+  public void setReplyWindowHours(int replyWindowHours) {
+    this.replyWindowHours = replyWindowHours;
+  }
+
+  public boolean isSaveReplyPreview() {
+    return saveReplyPreview;
+  }
+
+  public void setSaveReplyPreview(boolean saveReplyPreview) {
+    this.saveReplyPreview = saveReplyPreview;
   }
 
   public NotificationPreference getDefaultPreference() {

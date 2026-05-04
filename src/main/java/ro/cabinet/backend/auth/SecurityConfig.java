@@ -76,6 +76,7 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/login").permitAll()
             .requestMatchers("/api/v2/auth/login").permitAll()
+            .requestMatchers("/api/v2/notifications/whatsapp/webhook").permitAll()
             .requestMatchers("/api/efactura/oauth/**").permitAll()
             .requestMatchers("/sign", "/sign/**").permitAll()
             .requestMatchers("/sign-web", "/sign-web/**").permitAll()

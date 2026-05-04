@@ -1,5 +1,6 @@
 package ro.cabinet.backend.notifications.repo;
 
+import ro.cabinet.backend.notifications.NotificationChannel;
 import ro.cabinet.backend.notifications.NotificationStatus;
 import ro.cabinet.backend.notifications.entity.NotificationOutbox;
 
@@ -14,6 +15,16 @@ import org.springframework.data.repository.query.Param;
 
 public interface NotificationOutboxRepository extends JpaRepository<NotificationOutbox, UUID> {
   List<NotificationOutbox> findTop20ByAppointmentExternalIdOrderByCreatedAtDesc(String appointmentExternalId);
+
+  List<NotificationOutbox> findTop20ByPatientIdAndReminderTypeCodeOrderByCreatedAtDesc(String patientId, String reminderTypeCode);
+
+  List<NotificationOutbox> findTop20ByPhoneE164AndChannelUsedAndStatusInAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+      String phoneE164, NotificationChannel channelUsed,
+      Collection<NotificationStatus> statuses, OffsetDateTime cutoff);
+
+  List<NotificationOutbox> findTop20ByCorrelationCodeAndChannelUsedAndStatusInAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+      String correlationCode, NotificationChannel channelUsed,
+      Collection<NotificationStatus> statuses, OffsetDateTime cutoff);
 
   @Query("""
       select n

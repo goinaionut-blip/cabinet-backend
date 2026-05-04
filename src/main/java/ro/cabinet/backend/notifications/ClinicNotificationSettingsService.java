@@ -46,6 +46,15 @@ public class ClinicNotificationSettingsService {
     if (request.getSmsFallbackEnabled() != null) {
       settings.setSmsFallbackEnabled(request.getSmsFallbackEnabled());
     }
+    if (request.getWhatsappReplyProcessingEnabled() != null) {
+      settings.setWhatsappReplyProcessingEnabled(request.getWhatsappReplyProcessingEnabled());
+    }
+    if (request.getReplyWindowHours() != null) {
+      settings.setReplyWindowHours(Math.max(1, request.getReplyWindowHours()));
+    }
+    if (request.getSaveReplyPreview() != null) {
+      settings.setSaveReplyPreview(request.getSaveReplyPreview());
+    }
     if (request.getDefaultPreference() != null) {
       settings.setDefaultPreference(request.getDefaultPreference());
     }
@@ -123,6 +132,9 @@ public class ClinicNotificationSettingsService {
     response.setWhatsappEnabled(settings.isWhatsappEnabled());
     response.setWahaSessionName(settings.getWahaSessionName());
     response.setSmsFallbackEnabled(settings.isSmsFallbackEnabled());
+    response.setWhatsappReplyProcessingEnabled(settings.isWhatsappReplyProcessingEnabled());
+    response.setReplyWindowHours(settings.getReplyWindowHours());
+    response.setSaveReplyPreview(settings.isSaveReplyPreview());
     response.setDefaultPreference(settings.getDefaultPreference());
     WahaSessionInfo sessionInfo = wahaClient.getSessionStatus(settings.getWahaSessionName());
     response.setWahaSessionStatus(sessionInfo.getStatus());
@@ -137,6 +149,9 @@ public class ClinicNotificationSettingsService {
     settings.setClinicId(clinicId);
     settings.setWhatsappEnabled(false);
     settings.setSmsFallbackEnabled(true);
+    settings.setWhatsappReplyProcessingEnabled(false);
+    settings.setReplyWindowHours(72);
+    settings.setSaveReplyPreview(true);
     settings.setDefaultPreference(NotificationPreference.SMS_ONLY);
     settings.setWahaSessionName(defaultSessionName(clinicId));
     return settings;

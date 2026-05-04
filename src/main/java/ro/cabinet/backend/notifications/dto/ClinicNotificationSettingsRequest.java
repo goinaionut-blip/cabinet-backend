@@ -9,6 +9,9 @@ public class ClinicNotificationSettingsRequest {
   private Boolean whatsappEnabled;
   private String wahaSessionName;
   private Boolean smsFallbackEnabled;
+  private Boolean whatsappReplyProcessingEnabled;
+  private Integer replyWindowHours;
+  private Boolean saveReplyPreview;
   private NotificationPreference defaultPreference;
 
   public UUID getClinicId() {
@@ -41,6 +44,30 @@ public class ClinicNotificationSettingsRequest {
 
   public void setSmsFallbackEnabled(Boolean smsFallbackEnabled) {
     this.smsFallbackEnabled = smsFallbackEnabled;
+  }
+
+  public Boolean getWhatsappReplyProcessingEnabled() {
+    return whatsappReplyProcessingEnabled;
+  }
+
+  public void setWhatsappReplyProcessingEnabled(Boolean whatsappReplyProcessingEnabled) {
+    this.whatsappReplyProcessingEnabled = whatsappReplyProcessingEnabled;
+  }
+
+  public Integer getReplyWindowHours() {
+    return replyWindowHours;
+  }
+
+  public void setReplyWindowHours(Integer replyWindowHours) {
+    this.replyWindowHours = replyWindowHours;
+  }
+
+  public Boolean getSaveReplyPreview() {
+    return saveReplyPreview;
+  }
+
+  public void setSaveReplyPreview(Boolean saveReplyPreview) {
+    this.saveReplyPreview = saveReplyPreview;
   }
 
   public NotificationPreference getDefaultPreference() {

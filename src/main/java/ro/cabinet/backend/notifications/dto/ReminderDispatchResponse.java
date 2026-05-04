@@ -1,6 +1,7 @@
 package ro.cabinet.backend.notifications.dto;
 
 import ro.cabinet.backend.notifications.NotificationChannel;
+import ro.cabinet.backend.notifications.NotificationReplyStatus;
 import ro.cabinet.backend.notifications.NotificationStatus;
 
 import java.util.UUID;
@@ -12,6 +13,8 @@ public class ReminderDispatchResponse {
   private boolean fallbackUsed;
   private String providerMessageId;
   private String errorMessage;
+  private String correlationCode;
+  private NotificationReplyStatus replyStatus;
 
   public UUID getNotificationId() {
     return notificationId;
@@ -59,5 +62,21 @@ public class ReminderDispatchResponse {
 
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+  }
+
+  public String getCorrelationCode() {
+    return correlationCode;
+  }
+
+  public void setCorrelationCode(String correlationCode) {
+    this.correlationCode = correlationCode;
+  }
+
+  public NotificationReplyStatus getReplyStatus() {
+    return replyStatus;
+  }
+
+  public void setReplyStatus(NotificationReplyStatus replyStatus) {
+    this.replyStatus = replyStatus;
   }
 }

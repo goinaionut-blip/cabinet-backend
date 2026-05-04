@@ -2,6 +2,7 @@ package ro.cabinet.backend.notifications.entity;
 
 import ro.cabinet.backend.notifications.NotificationChannel;
 import ro.cabinet.backend.notifications.NotificationPreference;
+import ro.cabinet.backend.notifications.NotificationReplyStatus;
 import ro.cabinet.backend.notifications.NotificationStatus;
 
 import java.time.OffsetDateTime;
@@ -46,6 +47,9 @@ public class NotificationOutbox {
   @Column(name = "message_text", nullable = false, columnDefinition = "text")
   private String messageText;
 
+  @Column(name = "reminder_type_code")
+  private String reminderTypeCode;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "preference", nullable = false)
   private NotificationPreference preference;
@@ -64,6 +68,22 @@ public class NotificationOutbox {
   @Column(name = "provider_message_id")
   private String providerMessageId;
 
+  @Column(name = "correlation_code")
+  private String correlationCode;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "reply_status", nullable = false)
+  private NotificationReplyStatus replyStatus;
+
+  @Column(name = "reply_received_at")
+  private OffsetDateTime replyReceivedAt;
+
+  @Column(name = "reply_text_preview", length = 200)
+  private String replyTextPreview;
+
+  @Column(name = "reply_processed_at")
+  private OffsetDateTime replyProcessedAt;
+
   @Column(name = "last_error", columnDefinition = "text")
   private String lastError;
 
@@ -81,6 +101,9 @@ public class NotificationOutbox {
     }
     if (createdAt == null) {
       createdAt = now;
+    }
+    if (replyStatus == null) {
+      replyStatus = NotificationReplyStatus.NONE;
     }
     updatedAt = now;
   }
@@ -162,6 +185,14 @@ public class NotificationOutbox {
     this.messageText = messageText;
   }
 
+  public String getReminderTypeCode() {
+    return reminderTypeCode;
+  }
+
+  public void setReminderTypeCode(String reminderTypeCode) {
+    this.reminderTypeCode = reminderTypeCode;
+  }
+
   public NotificationPreference getPreference() {
     return preference;
   }
@@ -200,6 +231,46 @@ public class NotificationOutbox {
 
   public void setProviderMessageId(String providerMessageId) {
     this.providerMessageId = providerMessageId;
+  }
+
+  public String getCorrelationCode() {
+    return correlationCode;
+  }
+
+  public void setCorrelationCode(String correlationCode) {
+    this.correlationCode = correlationCode;
+  }
+
+  public NotificationReplyStatus getReplyStatus() {
+    return replyStatus;
+  }
+
+  public void setReplyStatus(NotificationReplyStatus replyStatus) {
+    this.replyStatus = replyStatus;
+  }
+
+  public OffsetDateTime getReplyReceivedAt() {
+    return replyReceivedAt;
+  }
+
+  public void setReplyReceivedAt(OffsetDateTime replyReceivedAt) {
+    this.replyReceivedAt = replyReceivedAt;
+  }
+
+  public String getReplyTextPreview() {
+    return replyTextPreview;
+  }
+
+  public void setReplyTextPreview(String replyTextPreview) {
+    this.replyTextPreview = replyTextPreview;
+  }
+
+  public OffsetDateTime getReplyProcessedAt() {
+    return replyProcessedAt;
+  }
+
+  public void setReplyProcessedAt(OffsetDateTime replyProcessedAt) {
+    this.replyProcessedAt = replyProcessedAt;
   }
 
   public String getLastError() {

@@ -19,6 +19,7 @@ public class ReminderDispatchRequest {
   private String phoneE164;
   private String appointmentExternalId;
   private OffsetDateTime appointmentDateTime;
+  private String reminderTypeCode;
   @NotBlank
   private String messageText;
   private NotificationPreference preference;
@@ -78,6 +79,14 @@ public class ReminderDispatchRequest {
 
   public void setAppointmentDateTime(OffsetDateTime appointmentDateTime) {
     this.appointmentDateTime = appointmentDateTime;
+  }
+
+  public String getReminderTypeCode() {
+    return reminderTypeCode;
+  }
+
+  public void setReminderTypeCode(String reminderTypeCode) {
+    this.reminderTypeCode = reminderTypeCode;
   }
 
   public String getMessageText() {

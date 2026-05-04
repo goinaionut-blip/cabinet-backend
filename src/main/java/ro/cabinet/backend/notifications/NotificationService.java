@@ -6,6 +6,8 @@ import ro.cabinet.backend.notifications.client.WahaClient;
 import ro.cabinet.backend.notifications.client.WahaSessionInfo;
 import ro.cabinet.backend.notifications.dto.ReminderDispatchRequest;
 import ro.cabinet.backend.notifications.dto.ReminderDispatchResponse;
+import ro.cabinet.backend.notifications.dto.ReminderReplyLookupItem;
+import ro.cabinet.backend.notifications.dto.ReminderReplyLookupResponse;
 import ro.cabinet.backend.notifications.entity.ClinicNotificationSettings;
 import ro.cabinet.backend.notifications.entity.NotificationAttempt;
 import ro.cabinet.backend.notifications.entity.NotificationOutbox;
@@ -13,6 +15,7 @@ import ro.cabinet.backend.notifications.repo.NotificationAttemptRepository;
 import ro.cabinet.backend.notifications.repo.NotificationOutboxRepository;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -27,17 +30,20 @@ public class NotificationService {
   private final ClinicNotificationSettingsService settingsService;
   private final WahaClient wahaClient;
   private final MessaggioSmsClient messaggioSmsClient;
+  private final CorrelationCodeGenerator correlationCodeGenerator;
 
   public NotificationService(NotificationOutboxRepository outboxRepository,
                              NotificationAttemptRepository attemptRepository,
                              ClinicNotificationSettingsService settingsService,
                              WahaClient wahaClient,
-                             MessaggioSmsClient messaggioSmsClient) {
+                             MessaggioSmsClient messaggioSmsClient,
+                             CorrelationCodeGenerator correlationCodeGenerator) {
     this.outboxRepository = outboxRepository;
     this.attemptRepository = attemptRepository;
     this.settingsService = settingsService;
     this.wahaClient = wahaClient;
     this.messaggioSmsClient = messaggioSmsClient;
+    this.correlationCodeGenerator = correlationCodeGenerator;
   }
 
   @Transactional
@@ -140,9 +146,12 @@ public class NotificationService {
     outbox.setPhoneE164(request.getPhoneE164().trim());
     outbox.setAppointmentExternalId(trimToNull(request.getAppointmentExternalId()));
     outbox.setAppointmentDateTime(request.getAppointmentDateTime());
-    outbox.setMessageText(request.getMessageText().trim());
+    outbox.setReminderTypeCode(trimToNull(request.getReminderTypeCode()));
+    outbox.setCorrelationCode(correlationCodeGenerator.generate(request.getReminderTypeCode()));
+    outbox.setMessageText(buildOutboundMessage(request, preference, outbox.getCorrelationCode()));
     outbox.setPreference(preference);
     outbox.setStatus(NotificationStatus.PENDING);
+    outbox.setReplyStatus(NotificationReplyStatus.NONE);
     outbox.setFallbackUsed(false);
     return outbox;
   }
@@ -214,7 +223,66 @@ public class NotificationService {
     response.setFallbackUsed(outbox.isFallbackUsed());
     response.setProviderMessageId(outbox.getProviderMessageId());
     response.setErrorMessage(outbox.getLastError());
+    response.setCorrelationCode(outbox.getCorrelationCode());
+    response.setReplyStatus(outbox.getReplyStatus());
     return response;
+  }
+
+  @Transactional(readOnly = true)
+  public List<ReminderReplyLookupResponse> lookupReplyStatuses(UUID clinicId, List<ReminderReplyLookupItem> items) {
+    if (clinicId == null) {
+      throw new NotificationValidationException("clinicId is required");
+    }
+    List<ReminderReplyLookupResponse> responses = new ArrayList<>();
+    if (items == null) {
+      return responses;
+    }
+    for (ReminderReplyLookupItem item : items) {
+      if (item == null) {
+        continue;
+      }
+      NotificationOutbox outbox = findLatestForLookup(clinicId, item);
+      ReminderReplyLookupResponse response = new ReminderReplyLookupResponse();
+      response.setPatientId(trimToNull(item.getPatientId()));
+      response.setAppointmentExternalId(trimToNull(item.getAppointmentExternalId()));
+      response.setReminderTypeCode(trimToNull(item.getReminderTypeCode()));
+      response.setReplyStatus(outbox == null || outbox.getReplyStatus() == null
+          ? NotificationReplyStatus.NONE
+          : outbox.getReplyStatus());
+      response.setReplyReceivedAt(outbox == null ? null : outbox.getReplyReceivedAt());
+      responses.add(response);
+    }
+    return responses;
+  }
+
+  private NotificationOutbox findLatestForLookup(UUID clinicId, ReminderReplyLookupItem item) {
+    String appointmentExternalId = trimToNull(item.getAppointmentExternalId());
+    if (appointmentExternalId != null) {
+      return outboxRepository.findTop20ByAppointmentExternalIdOrderByCreatedAtDesc(appointmentExternalId).stream()
+          .filter(outbox -> clinicId.equals(outbox.getClinicId()))
+          .findFirst()
+          .orElse(null);
+    }
+    String patientId = trimToNull(item.getPatientId());
+    String reminderTypeCode = trimToNull(item.getReminderTypeCode());
+    if (patientId == null || reminderTypeCode == null) {
+      return null;
+    }
+    return outboxRepository.findTop20ByPatientIdAndReminderTypeCodeOrderByCreatedAtDesc(patientId, reminderTypeCode).stream()
+        .filter(outbox -> clinicId.equals(outbox.getClinicId()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private String buildOutboundMessage(ReminderDispatchRequest request, NotificationPreference preference, String correlationCode) {
+    String baseMessage = request.getMessageText().trim();
+    if (preference != NotificationPreference.WHATSAPP_ONLY && preference != NotificationPreference.WHATSAPP_FIRST) {
+      return baseMessage;
+    }
+    if (correlationCode == null || correlationCode.isBlank()) {
+      return baseMessage;
+    }
+    return baseMessage + "\n\nRăspundeți cu DA pentru confirmare sau NU pentru reprogramare. Ref: " + correlationCode;
   }
 
   private void validateRequest(ReminderDispatchRequest request) {

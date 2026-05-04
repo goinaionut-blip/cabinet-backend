@@ -2,6 +2,8 @@ package ro.cabinet.backend.notifications;
 
 import ro.cabinet.backend.notifications.dto.ReminderDispatchRequest;
 import ro.cabinet.backend.notifications.dto.ReminderDispatchResponse;
+import ro.cabinet.backend.notifications.dto.ReminderReplyLookupRequest;
+import ro.cabinet.backend.notifications.dto.ReminderReplyLookupResponse;
 import ro.cabinet.backend.v2.service.ClinicAccessService;
 import ro.cabinet.backend.v2.service.CurrentUserService;
 
@@ -49,5 +51,11 @@ public class NotificationController {
       clinicAccessService.requireClinicMembership(clinicId, userId);
     }
     return notificationService.getByAppointmentExternalId(appointmentExternalId);
+  }
+
+  @PostMapping("/reply-statuses")
+  public List<ReminderReplyLookupResponse> replyStatuses(@Valid @RequestBody ReminderReplyLookupRequest request) {
+    clinicAccessService.requireClinicMembership(request.getClinicId(), currentUserService.requireCurrentUserId());
+    return notificationService.lookupReplyStatuses(request.getClinicId(), request.getReminders());
   }
 }
