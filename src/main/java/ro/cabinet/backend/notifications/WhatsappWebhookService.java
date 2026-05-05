@@ -14,8 +14,10 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HexFormat;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -64,21 +66,21 @@ public class WhatsappWebhookService {
       return new WhatsappWebhookResponse("ignored");
     }
 
-    String normalizedPhone = normalizePhone(from);
-    if (normalizedPhone == null) {
+    List<String> phoneCandidates = extractPhoneCandidates(payload);
+    if (phoneCandidates.isEmpty()) {
       logIgnored(from, session, receivedAt, "invalid_phone");
       return new WhatsappWebhookResponse("ignored");
     }
 
-    NotificationOutbox outbox = findMatchingOutbox(session, normalizedPhone, body, receivedAt);
+    NotificationOutbox outbox = findMatchingOutbox(session, phoneCandidates, body, receivedAt);
     if (outbox == null) {
-      logIgnored(normalizedPhone, session, receivedAt, "no_recent_reminder");
+      logIgnored(String.join(",", phoneCandidates), session, receivedAt, "no_recent_reminder");
       return new WhatsappWebhookResponse("ignored");
     }
 
     ClinicNotificationSettings settings = settingsService.getOrCreateSettings(outbox.getClinicId());
     if (!settings.isWhatsappReplyProcessingEnabled()) {
-      logIgnored(normalizedPhone, session, receivedAt, "reply_processing_disabled");
+      logIgnored(String.join(",", phoneCandidates), session, receivedAt, "reply_processing_disabled");
       return new WhatsappWebhookResponse("ignored");
     }
 
@@ -94,7 +96,7 @@ public class WhatsappWebhookService {
     return new WhatsappWebhookResponse("processed");
   }
 
-  private NotificationOutbox findMatchingOutbox(String session, String phoneE164, String body, OffsetDateTime receivedAt) {
+  private NotificationOutbox findMatchingOutbox(String session, List<String> phoneCandidates, String body, OffsetDateTime receivedAt) {
     OffsetDateTime cutoff = receivedAt.minusDays(30);
     String correlationCode = extractCorrelationCode(body);
     if (correlationCode != null) {
@@ -107,10 +109,16 @@ public class WhatsappWebhookService {
       }
     }
 
-    List<NotificationOutbox> byPhone = outboxRepository
-        .findTop20ByPhoneE164AndChannelUsedAndStatusInAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
-            phoneE164, NotificationChannel.WHATSAPP, REPLY_ELIGIBLE_STATUSES, cutoff);
-    return filterBySession(byPhone, session, receivedAt);
+    for (String phoneCandidate : phoneCandidates) {
+      List<NotificationOutbox> byPhone = outboxRepository
+          .findTop20ByPhoneE164AndChannelUsedAndStatusInAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+              phoneCandidate, NotificationChannel.WHATSAPP, REPLY_ELIGIBLE_STATUSES, cutoff);
+      NotificationOutbox matched = filterBySession(byPhone, session, receivedAt);
+      if (matched != null) {
+        return matched;
+      }
+    }
+    return null;
   }
 
   private NotificationOutbox filterBySession(List<NotificationOutbox> candidates, String session, OffsetDateTime receivedAt) {
@@ -197,6 +205,69 @@ public class WhatsappWebhookService {
     return null;
   }
 
+  private static List<String> extractPhoneCandidates(JsonNode payload) {
+    LinkedHashSet<String> candidates = new LinkedHashSet<>();
+    addPhoneCandidate(candidates, extractText(payload, "from"));
+    addPhoneCandidate(candidates, extractText(payload, "chatId"));
+    addPhoneCandidate(candidates, extractText(payload, "participant"));
+    addPhoneCandidate(candidates, extractText(payload, "author"));
+    addPhoneCandidate(candidates, extractText(payload, "sender"));
+    addPhoneCandidate(candidates, extractText(payload, "fromNumber"));
+    addPhoneCandidate(candidates, extractNestedText(payload, "key", "remoteJid"));
+    addPhoneCandidate(candidates, extractNestedText(payload, "key", "remoteJidAlt"));
+    addPhoneCandidate(candidates, extractNestedText(payload, "key", "participant"));
+    addPhoneCandidate(candidates, extractNestedText(payload, "key", "participantAlt"));
+    addPhoneCandidate(candidates, extractNestedText(payload, "_data", "chatId"));
+    addPhoneCandidate(candidates, extractNestedText(payload, "_data", "from"));
+    addPhoneCandidate(candidates, extractNestedText(payload, "_data", "to"));
+    collectRecursivePhoneCandidates(payload, candidates, 0);
+    return new ArrayList<>(candidates);
+  }
+
+  private static void collectRecursivePhoneCandidates(JsonNode node, LinkedHashSet<String> candidates, int depth) {
+    if (node == null || node.isNull() || depth > 6) {
+      return;
+    }
+    if (node.isObject()) {
+      addPhoneCandidate(candidates, asText(node.get("from")));
+      addPhoneCandidate(candidates, asText(node.get("chatId")));
+      addPhoneCandidate(candidates, asText(node.get("participant")));
+      addPhoneCandidate(candidates, asText(node.get("remoteJid")));
+      addPhoneCandidate(candidates, asText(node.get("remoteJidAlt")));
+      addPhoneCandidate(candidates, asText(node.get("participantAlt")));
+      node.fields().forEachRemaining(entry -> collectRecursivePhoneCandidates(entry.getValue(), candidates, depth + 1));
+      return;
+    }
+    if (node.isArray()) {
+      for (JsonNode child : node) {
+        collectRecursivePhoneCandidates(child, candidates, depth + 1);
+      }
+    }
+  }
+
+  private static String extractNestedText(JsonNode payload, String container, String field) {
+    if (payload == null || container == null || field == null) {
+      return null;
+    }
+    JsonNode directContainer = payload.get(container);
+    if (directContainer != null) {
+      String directValue = asText(directContainer.get(field));
+      if (directValue != null && !directValue.isBlank()) {
+        return directValue;
+      }
+    }
+    for (String parent : List.of("event", "payload", "message", "data")) {
+      JsonNode nestedContainer = payload.path(parent).get(container);
+      if (nestedContainer != null) {
+        String nestedValue = asText(nestedContainer.get(field));
+        if (nestedValue != null && !nestedValue.isBlank()) {
+          return nestedValue;
+        }
+      }
+    }
+    return null;
+  }
+
   private static OffsetDateTime extractTimestamp(JsonNode payload) {
     JsonNode node = findValueNode(payload, "timestamp");
     if (node == null || node.isNull()) {
@@ -246,11 +317,22 @@ public class WhatsappWebhookService {
     return value != null && value.asBoolean(false);
   }
 
+  private static void addPhoneCandidate(LinkedHashSet<String> candidates, String raw) {
+    String normalized = normalizePhone(raw);
+    if (normalized != null) {
+      candidates.add(normalized);
+    }
+  }
+
   private static String normalizePhone(String from) {
     if (from == null) {
       return null;
     }
-    String digits = from.replaceAll("[^0-9]", "");
+    String raw = from.trim();
+    if (raw.isEmpty() || raw.endsWith("@lid") || raw.contains(":")) {
+      return null;
+    }
+    String digits = raw.replaceAll("[^0-9]", "");
     if (digits.length() < 8 || digits.length() > 15) {
       return null;
     }
@@ -300,5 +382,9 @@ public class WhatsappWebhookService {
 
   private static String safe(String value) {
     return value == null ? "-" : value;
+  }
+
+  private static String asText(JsonNode node) {
+    return node != null && node.isValueNode() ? node.asText() : null;
   }
 }
